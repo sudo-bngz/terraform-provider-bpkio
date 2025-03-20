@@ -333,3 +333,12 @@ Optional:
 - `content` (String)
 - `internal_id` (String)
 - `name` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Ad insertion Service can be imported by specifying the numeric identifier.
+terraform import bpkio_service_ad_insertion.example 123
+```

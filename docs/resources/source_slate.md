@@ -48,3 +48,12 @@ resource "bpkio_source_slate" "this" {
 - `format` (String)
 - `id` (Number) The ID of this resource.
 - `type` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Slate Source can be imported by specifying the numeric identifier.
+terraform import bpkio_source_slate.example 123
+```

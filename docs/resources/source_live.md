@@ -68,3 +68,12 @@ Required:
 
 - `name` (String)
 - `value` (String)
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Live Source can be imported by specifying the numeric identifier.
+terraform import bpkio_source_live.example 123
+```
