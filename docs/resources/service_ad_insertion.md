@@ -16,7 +16,7 @@ Manages Ad Insertion service creation (see https://developers.broadpeak.io/refer
 terraform {
   required_providers {
     bpkio = {
-      source = "rmcbfm.io/terraform/bpkio"
+      source = "bashou/terraform/bpkio"
     }
   }
 }
@@ -28,7 +28,7 @@ provider "bpkio" {
 resource "bpkio_source_adserver" "this" {
   name        = "foobar-test-tf-adserver"
   description = "test"
-  url         = "https://hls-radio-s3.nextradiotv.com/lg/bfmtv/master.m3u8"
+  url         = "https://live.stream/master.m3u8"
 
   //TODO: Handle case when query_parameters is empty
   query_parameters = []
@@ -37,7 +37,7 @@ resource "bpkio_source_adserver" "this" {
 resource "bpkio_source_live" "this" {
   name        = "foobar-test-tf-liveorigin"
   description = "test"
-  url         = "https://hls-radio-s3.nextradiotv.com/lg/bfmtv/master.m3u8"
+  url         = "https://live.stream/master.m3u8"
 
   //TODO: Find way to handle when origin is empty
   origin = {}

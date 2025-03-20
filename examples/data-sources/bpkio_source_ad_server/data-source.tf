@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     bpkio = {
-      source = "rmcbfm.io/terraform/bpkio"
+      source = "bashou/terraform/bpkio"
     }
   }
 }
