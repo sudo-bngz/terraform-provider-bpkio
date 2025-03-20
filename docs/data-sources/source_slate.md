@@ -16,7 +16,7 @@ description: |-
 terraform {
   required_providers {
     bpkio = {
-      source = "bashou/terraform/bpkio"
+      source = "bashou/bpkio"
     }
   }
 }

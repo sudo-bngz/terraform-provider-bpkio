@@ -16,7 +16,7 @@ Manages Ad Insertion service creation (see https://developers.broadpeak.io/refer
 terraform {
   required_providers {
     bpkio = {
-      source = "bashou/terraform/bpkio"
+      source = "bashou/bpkio"
     }
   }
 }
