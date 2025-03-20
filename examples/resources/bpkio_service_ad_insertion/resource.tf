@@ -13,7 +13,7 @@ provider "bpkio" {
 resource "bpkio_source_adserver" "this" {
   name        = "foobar-test-tf-adserver"
   description = "test"
-  url         = "https://live.stream/master.m3u8"
+  url         = "https://ad.server/endpoint"
 
   //TODO: Handle case when query_parameters is empty
   query_parameters = []

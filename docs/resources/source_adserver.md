@@ -27,7 +27,7 @@ provider "bpkio" {
 resource "bpkio_source_adserver" "this" {
   name        = "foobar-test-tf-b"
   description = "test"
-  url         = "https://hls-radio-s3.nextradiotv.com/lg/bfmtv/master.m3u8"
+  url         = "https://ad.server/endpoint"
 
   //TODO: Handle case when query_parameters is empty
   query_parameters = []
