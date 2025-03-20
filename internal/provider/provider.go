@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -12,12 +15,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &bpkioProvider{}
 )
+
+func getenv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
 
 // New is a helper function to simplify provider server and testing implementation.
 func New(version string) func() provider.Provider {
@@ -102,8 +114,8 @@ func (p *bpkioProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
 
-	endpoint := os.Getenv("BPKIO_ENDPOINT")
-	api_key := os.Getenv("BPKIO_API_KEY")
+	endpoint := getenv("BPKIO_ENDPOINT", "https://api.broadpeak.io")
+	api_key := getenv("BPKIO_API_KEY", "")
 
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
@@ -113,13 +125,9 @@ func (p *bpkioProvider) Configure(ctx context.Context, req provider.ConfigureReq
 		api_key = config.ApiKey.ValueString()
 	}
 
+	tflog.Debug(ctx, endpoint)
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
-
-	if endpoint == "" {
-		//TODO: find a way to use it
-		endpoint = "https://api.broadpeak.io"
-	}
 
 	if api_key == "" {
 		resp.Diagnostics.AddAttributeError(
