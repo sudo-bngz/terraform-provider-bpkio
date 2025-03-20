@@ -73,6 +73,7 @@ func (r *serviceAdInsertionResource) Metadata(_ context.Context, req resource.Me
 // Schema defines the schema for the resource.
 func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Manages Ad Insertion service creation (see https://developers.broadpeak.io/reference/adinsertioncontroller_create_v1).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
 				Computed: true,
@@ -111,6 +112,9 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 			"state": schema.StringAttribute{
 				Computed: true,
 				Default:  stringdefault.StaticString("enabled"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("enabled", "paused", "bypassed"),
+				},
 			},
 			"tags": schema.ListAttribute{
 				Optional:    true,

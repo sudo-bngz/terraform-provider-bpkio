@@ -62,28 +62,36 @@ func (d *serviceAdInsertionDataSource) Schema(_ context.Context, _ datasource.Sc
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
-				Required: true,
+				Required:    true,
+				Description: "The ID of the service.",
 			},
 			"name": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The name of the service.",
 			},
 			"type": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The type of the service.",
 			},
 			"url": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The URL of the service.",
 			},
 			"creation_date": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The creation date of the service.",
 			},
 			"update_date": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The last update date of the service.",
 			},
 			"state": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The state of the service (Default: `enabled`).",
 			},
 			"tags": schema.ListAttribute{
 				Computed:    true,
+				Description: "Tags associated with the service.",
 				ElementType: types.StringType,
 			},
 			"live_ad_preroll": schema.SingleNestedAttribute{
@@ -91,10 +99,12 @@ func (d *serviceAdInsertionDataSource) Schema(_ context.Context, _ datasource.Sc
 					"ad_server": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The ID of the ad server source.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The name of the ad server source.",
 							},
 							"type": schema.StringAttribute{
 								Computed: true,

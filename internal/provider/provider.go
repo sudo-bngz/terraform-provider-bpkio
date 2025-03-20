@@ -59,7 +59,8 @@ func (p *bpkioProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "The Broadpeak API endpoint. Defaults to `https://api.broadpeak.io`.",
 			},
 			"api_key": schema.StringAttribute{
 				Required:    true,

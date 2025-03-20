@@ -27,4 +27,4 @@ provider "bpkio" {
 
 ### Optional
 
-- `endpoint` (String)
+- `endpoint` (String) The Broadpeak API endpoint. Defaults to `https://api.broadpeak.io`.
