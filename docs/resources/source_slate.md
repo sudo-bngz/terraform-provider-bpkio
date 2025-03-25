@@ -36,18 +36,18 @@ resource "bpkio_source_slate" "this" {
 
 ### Required
 
-- `name` (String)
-- `url` (String)
+- `name` (String) The name of the slate.
+- `url` (String) The URL of the slate.
 
 ### Optional
 
-- `description` (String)
+- `description` (String) A description of the slate.
 
 ### Read-Only
 
-- `format` (String)
-- `id` (Number) The ID of this resource.
-- `type` (String)
+- `format` (String) The format of the slate.
+- `id` (Number) The ID of the slate.
+- `type` (String) The type of the slate.
 
 ## Import
 

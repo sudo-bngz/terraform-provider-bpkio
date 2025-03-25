@@ -39,28 +39,28 @@ resource "bpkio_source_adserver" "this" {
 
 ### Required
 
-- `name` (String)
-- `url` (String)
+- `name` (String) The name of the adserver.
+- `url` (String) The URL of the adserver.
 
 ### Optional
 
-- `description` (String)
-- `queries` (String)
-- `query_parameters` (Attributes List) (see [below for nested schema](#nestedatt--query_parameters))
+- `description` (String) The description of the adserver. This field is optional and can be used to provide additional information about the adserver.
+- `queries` (String, Deprecated) The queries associated with the adserver. This field is optional and can be used to specify additional query parameters for the adserver.
+- `query_parameters` (Attributes List) A list of query parameters for the adserver. Each parameter has a type, name, and value. (see [below for nested schema](#nestedatt--query_parameters))
 
 ### Read-Only
 
-- `id` (Number) The ID of this resource.
-- `type` (String)
+- `id` (Number) ID of the adserver. This is a unique identifier for the adserver resource.
+- `type` (String) The type of the adserver. This is a read-only field.
 
 <a id="nestedatt--query_parameters"></a>
 ### Nested Schema for `query_parameters`
 
 Required:
 
-- `name` (String)
-- `type` (String)
-- `value` (String)
+- `name` (String) The name of the query parameter. This field is required and must be a valid string.
+- `type` (String) The type of the query parameter. This field is required and must be one of the following values: 'from-query-parameter', 'from-variable', 'from-header', 'forward', or 'custom'.
+- `value` (String) The value of the query parameter. This field is required and must be a valid string.
 
 ## Import
 

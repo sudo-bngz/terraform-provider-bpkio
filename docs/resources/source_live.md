@@ -39,20 +39,20 @@ resource "bpkio_source_live" "this" {
 
 ### Required
 
-- `name` (String)
-- `url` (String)
+- `name` (String) The name of the source live.
+- `url` (String) The URL of the source live.
 
 ### Optional
 
-- `description` (String)
-- `multi_period` (Boolean)
-- `origin` (Attributes) (see [below for nested schema](#nestedatt--origin))
+- `description` (String) The description of the source live.
+- `multi_period` (Boolean) Whether the source live supports multiple periods.(Default: `false`)
+- `origin` (Attributes) The origin configuration for the source live. (see [below for nested schema](#nestedatt--origin))
 
 ### Read-Only
 
-- `format` (String)
-- `id` (Number) The ID of this resource.
-- `type` (String)
+- `format` (String) The format of the source live.
+- `id` (Number) The ID of the source live.
+- `type` (String) The type of the source live.
 
 <a id="nestedatt--origin"></a>
 ### Nested Schema for `origin`
@@ -66,8 +66,8 @@ Optional:
 
 Required:
 
-- `name` (String)
-- `value` (String)
+- `name` (String) The name of the custom header.
+- `value` (String) The value of the custom header.
 
 ## Import
 

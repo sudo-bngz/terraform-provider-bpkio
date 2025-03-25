@@ -43,17 +43,17 @@ output "service_output" {
 
 ### Optional
 
-- `advanced_options` (Attributes) (see [below for nested schema](#nestedatt--advanced_options))
-- `transcoding_profile` (Attributes) (see [below for nested schema](#nestedatt--transcoding_profile))
+- `advanced_options` (Attributes) Advanced options for the service (currently for authorization headers) (see [below for nested schema](#nestedatt--advanced_options))
+- `transcoding_profile` (Attributes) Transcoding profile configuration for the service. (see [below for nested schema](#nestedatt--transcoding_profile))
 
 ### Read-Only
 
 - `creation_date` (String) The creation date of the service.
-- `enable_ad_transcoding` (Boolean)
-- `live_ad_preroll` (Attributes) (see [below for nested schema](#nestedatt--live_ad_preroll))
-- `live_ad_replacement` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement))
+- `enable_ad_transcoding` (Boolean) Enable server-side ad transcoding (default: `false`).
+- `live_ad_preroll` (Attributes) Configuration of live pre-roll (see [below for nested schema](#nestedatt--live_ad_preroll))
+- `live_ad_replacement` (Attributes) Configuration of live mid-roll (see [below for nested schema](#nestedatt--live_ad_replacement))
 - `name` (String) The name of the service.
-- `server_side_ad_tracking` (Attributes) (see [below for nested schema](#nestedatt--server_side_ad_tracking))
+- `server_side_ad_tracking` (Attributes) Configure server-side ad tracking. (see [below for nested schema](#nestedatt--server_side_ad_tracking))
 - `source` (Attributes) (see [below for nested schema](#nestedatt--source))
 - `state` (String) The state of the service (Default: `enabled`).
 - `tags` (List of String) Tags associated with the service.
@@ -66,7 +66,7 @@ output "service_output" {
 
 Optional:
 
-- `authorization_header` (Attributes) (see [below for nested schema](#nestedatt--advanced_options--authorization_header))
+- `authorization_header` (Attributes) Authorization header to be added to the request to the ad server (see [below for nested schema](#nestedatt--advanced_options--authorization_header))
 
 <a id="nestedatt--advanced_options--authorization_header"></a>
 ### Nested Schema for `advanced_options.authorization_header`
@@ -94,12 +94,12 @@ Read-Only:
 
 Optional:
 
-- `max_duration` (Number)
-- `offset` (Number)
+- `max_duration` (Number) Pre-roll maximum duration (in seconds)
+- `offset` (Number) Pre-roll relative start time (in seconds)
 
 Read-Only:
 
-- `ad_server` (Attributes) (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server))
+- `ad_server` (Attributes) Configuration of ad server (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server))
 
 <a id="nestedatt--live_ad_preroll--ad_server"></a>
 ### Nested Schema for `live_ad_preroll.ad_server`
@@ -108,18 +108,18 @@ Read-Only:
 
 - `id` (Number) The ID of the ad server source.
 - `name` (String) The name of the ad server source.
-- `query_parameters` (Attributes List) (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server--query_parameters))
-- `type` (String)
-- `url` (String)
+- `query_parameters` (Attributes List) The query parameters passed to the ad server requests. (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server--query_parameters))
+- `type` (String) The type of the ad server source.
+- `url` (String) The URL of the ad server source.
 
 <a id="nestedatt--live_ad_preroll--ad_server--query_parameters"></a>
 ### Nested Schema for `live_ad_preroll.ad_server.query_parameters`
 
 Read-Only:
 
-- `name` (String)
-- `type` (String)
-- `value` (String)
+- `name` (String) The name of the query parameter.
+- `type` (String) The type of the query parameter (values: `custom`, `forward`, `from-query-parameter`, `from-variable`, `from-header`).
+- `value` (String) The value of the query parameter.
 
 
 
@@ -129,29 +129,29 @@ Read-Only:
 
 Read-Only:
 
-- `ad_server` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--ad_server))
-- `gap_filler` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--gap_filler))
-- `spot_aware` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--spot_aware))
+- `ad_server` (Attributes) Configuration of live ad-replacement (see [below for nested schema](#nestedatt--live_ad_replacement--ad_server))
+- `gap_filler` (Attributes) Configure gap-filler (see [below for nested schema](#nestedatt--live_ad_replacement--gap_filler))
+- `spot_aware` (Attributes) Configure spot-aware feature (see [below for nested schema](#nestedatt--live_ad_replacement--spot_aware))
 
 <a id="nestedatt--live_ad_replacement--ad_server"></a>
 ### Nested Schema for `live_ad_replacement.ad_server`
 
 Read-Only:
 
-- `id` (Number)
-- `name` (String)
+- `id` (Number) The ID of the ad server.
+- `name` (String) The name of the ad server.
 - `query_parameters` (Attributes List) (see [below for nested schema](#nestedatt--live_ad_replacement--ad_server--query_parameters))
-- `type` (String)
-- `url` (String)
+- `type` (String) The type of the ad server.
+- `url` (String) The URL of the ad server.
 
 <a id="nestedatt--live_ad_replacement--ad_server--query_parameters"></a>
 ### Nested Schema for `live_ad_replacement.ad_server.query_parameters`
 
 Read-Only:
 
-- `name` (String)
-- `type` (String)
-- `value` (String)
+- `name` (String) The name of the query parameter.
+- `type` (String) The type of the query parameter (values: `custom`, `forward`, `from-query-parameter`, `from-variable`, `from-header`).
+- `value` (String) The value of the query parameter.
 
 
 
@@ -160,10 +160,10 @@ Read-Only:
 
 Read-Only:
 
-- `id` (Number)
-- `name` (String)
-- `type` (String)
-- `url` (String)
+- `id` (Number) The ID of the slate.
+- `name` (String) The name of the slate.
+- `type` (String) The type of the slate.
+- `url` (String) The URL of the slate.
 
 
 <a id="nestedatt--live_ad_replacement--spot_aware"></a>
@@ -171,7 +171,7 @@ Read-Only:
 
 Read-Only:
 
-- `mode` (String)
+- `mode` (String) Spot-aware mode (values: `french_addressable_tv`, `spot_to_live` or `disabled`)
 
 
 
@@ -180,8 +180,8 @@ Read-Only:
 
 Read-Only:
 
-- `check_ad_media_segment_availability` (Boolean)
-- `enable` (Boolean)
+- `check_ad_media_segment_availability` (Boolean) Check ad media segment availability (default: `false`).
+- `enable` (Boolean) Enable server-side ad tracking (default: `false`).
 
 
 <a id="nestedatt--source"></a>
@@ -189,26 +189,26 @@ Read-Only:
 
 Read-Only:
 
-- `description` (String)
-- `format` (String)
-- `id` (Number)
-- `multi_period` (Boolean)
-- `name` (String)
-- `origin` (Attributes) (see [below for nested schema](#nestedatt--source--origin))
+- `description` (String) The description of the source.
+- `format` (String) The format of the source.
+- `id` (Number) The ID of the source.
+- `multi_period` (Boolean) Enable multi-period support for the source.
+- `name` (String) The name of the source.
+- `origin` (Attributes) Origin configuration for the source. (see [below for nested schema](#nestedatt--source--origin))
 - `type` (String)
-- `url` (String)
+- `url` (String) The URL of the source.
 
 <a id="nestedatt--source--origin"></a>
 ### Nested Schema for `source.origin`
 
 Read-Only:
 
-- `custom_headers` (Attributes List) (see [below for nested schema](#nestedatt--source--origin--custom_headers))
+- `custom_headers` (Attributes List) Custom headers to be added to the request to the origin. (see [below for nested schema](#nestedatt--source--origin--custom_headers))
 
 <a id="nestedatt--source--origin--custom_headers"></a>
 ### Nested Schema for `source.origin.custom_headers`
 
 Read-Only:
 
-- `name` (String)
-- `value` (String)
+- `name` (String) Name of the custom header.
+- `value` (String) Value of the custom header.

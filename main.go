@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "bashou/terraform/bpkio",
+		Address: "registry.terraform.io/bashou/bpkio",
 		Debug:   debug,
 	}
 

@@ -186,27 +186,27 @@ output "service_adinsertion_test_free_source" {
 
 ### Required
 
-- `name` (String)
+- `name` (String) Name of the ad insertion service. This is a human-readable name for the service.
 
 ### Optional
 
 - `advanced_options` (Attributes) (see [below for nested schema](#nestedatt--advanced_options))
 - `enable_ad_transcoding` (Boolean)
 - `live_ad_preroll` (Attributes) (see [below for nested schema](#nestedatt--live_ad_preroll))
-- `live_ad_replacement` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement))
+- `live_ad_replacement` (Attributes) Live ad replacement configuration. This is the configuration for live ad replacement. (see [below for nested schema](#nestedatt--live_ad_replacement))
 - `server_side_ad_tracking` (Attributes) (see [below for nested schema](#nestedatt--server_side_ad_tracking))
 - `source` (Attributes) (see [below for nested schema](#nestedatt--source))
-- `tags` (List of String)
+- `tags` (List of String) Tags for the ad insertion service. This is a list of tags associated with the service.
 - `transcoding_profile` (Attributes) (see [below for nested schema](#nestedatt--transcoding_profile))
-- `update_date` (String)
+- `update_date` (String) Update date of the ad insertion service. This indicates when the service was last updated.
 
 ### Read-Only
 
-- `creation_date` (String)
-- `id` (Number) The ID of this resource.
-- `state` (String)
-- `type` (String)
-- `url` (String)
+- `creation_date` (String) Creation date of the ad insertion service. This indicates when the service was created.
+- `id` (Number) ID of the ad insertion service. This is a unique identifier for the service.
+- `state` (String) State of the ad insertion service. This indicates the current state of the service. Possible values are 'enabled', 'paused', or 'bypassed'.
+- `type` (String) Type of the ad insertion service. This indicates the type of service being created.
+- `url` (String) URL of the ad insertion service. This is the endpoint where the service can be accessed.
 
 <a id="nestedatt--advanced_options"></a>
 ### Nested Schema for `advanced_options`
@@ -230,22 +230,22 @@ Optional:
 
 Optional:
 
-- `ad_server` (Attributes) (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server))
-- `max_duration` (Number)
-- `offset` (Number)
+- `ad_server` (Attributes) Ad server configuration. This is the ad server used for ad pre-roll. (see [below for nested schema](#nestedatt--live_ad_preroll--ad_server))
+- `max_duration` (Number) Pre-roll maximum duration (in seconds)
+- `offset` (Number) Pre-roll relative start time (in seconds)
 
 <a id="nestedatt--live_ad_preroll--ad_server"></a>
 ### Nested Schema for `live_ad_preroll.ad_server`
 
 Required:
 
-- `id` (Number)
+- `id` (Number) ID of the ad server. This is a unique identifier for the ad server.
 
 Read-Only:
 
-- `name` (String)
-- `type` (String)
-- `url` (String)
+- `name` (String) Name of the ad server. This is a human-readable name for the ad server.
+- `type` (String) Type of the ad server. This indicates the type of ad server being used.
+- `url` (String) URL of the ad server. This is the endpoint where the ad server can be accessed.
 
 
 
@@ -254,8 +254,8 @@ Read-Only:
 
 Optional:
 
-- `ad_server` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--ad_server))
-- `gap_filler` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--gap_filler))
+- `ad_server` (Attributes) Ad server configuration. This is the ad server used for ad replacement. (see [below for nested schema](#nestedatt--live_ad_replacement--ad_server))
+- `gap_filler` (Attributes) Gap filler configuration. This is the gap filler / slate used for ad replacement. (see [below for nested schema](#nestedatt--live_ad_replacement--gap_filler))
 - `spot_aware` (Attributes) (see [below for nested schema](#nestedatt--live_ad_replacement--spot_aware))
 
 <a id="nestedatt--live_ad_replacement--ad_server"></a>
@@ -263,13 +263,13 @@ Optional:
 
 Required:
 
-- `id` (Number)
+- `id` (Number) ID of the ad server. This is a unique identifier for the ad server.
 
 Read-Only:
 
-- `name` (String)
-- `type` (String)
-- `url` (String)
+- `name` (String) Name of the ad server. This is a human-readable name for the ad server.
+- `type` (String) Type of the ad server. This indicates the type of ad server being used.
+- `url` (String) URL of the ad server. This is the endpoint where the ad server can be accessed.
 
 
 <a id="nestedatt--live_ad_replacement--gap_filler"></a>
@@ -277,13 +277,13 @@ Read-Only:
 
 Required:
 
-- `id` (Number)
+- `id` (Number) ID of the gap filler. This is a unique identifier for the gap filler.
 
 Read-Only:
 
-- `name` (String)
-- `type` (String)
-- `url` (String)
+- `name` (String) Name of the gap filler. This is a human-readable name for the gap filler.
+- `type` (String) Type of the gap filler. This indicates the type of gap filler being used.
+- `url` (String) URL of the gap filler. This is the endpoint where the gap filler can be accessed.
 
 
 <a id="nestedatt--live_ad_replacement--spot_aware"></a>
@@ -291,7 +291,7 @@ Read-Only:
 
 Optional:
 
-- `mode` (String)
+- `mode` (String) Mode of the spot aware. This indicates the mode of the spot aware feature. (valid values are 'french_addressable_tv', 'spot_to_live', or 'disabled'. Default: `disabled`).
 
 
 
