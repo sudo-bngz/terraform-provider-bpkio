@@ -68,38 +68,45 @@ func (r *sourceLiveResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The ID of the source live.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The name of the source live.",
 			},
 			"type": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The type of the source live.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"url": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The URL of the source live.",
 			},
 			"format": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The format of the source live.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"description": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  stringdefault.StaticString(""),
+				Optional:    true,
+				Computed:    true,
+				Description: "The description of the source live.",
+				Default:     stringdefault.StaticString(""),
 			},
 			"multi_period": schema.BoolAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  booldefault.StaticBool(false),
+				Optional:    true,
+				Computed:    true,
+				Description: "Whether the source live supports multiple periods.(Default: `false`)",
+				Default:     booldefault.StaticBool(false),
 			},
 			"origin": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -108,17 +115,20 @@ func (r *sourceLiveResource) Schema(_ context.Context, _ resource.SchemaRequest,
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
 								"name": schema.StringAttribute{
-									Required: true,
+									Required:    true,
+									Description: "The name of the custom header.",
 								},
 								"value": schema.StringAttribute{
-									Required: true,
+									Required:    true,
+									Description: "The value of the custom header.",
 								},
 							},
 						},
 					},
 				},
-				Optional: true,
-				Computed: true,
+				Optional:    true,
+				Computed:    true,
+				Description: "The origin configuration for the source live.",
 			},
 		},
 	}

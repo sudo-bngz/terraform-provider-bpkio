@@ -69,49 +69,60 @@ func (r *sourceAdServerResource) Schema(_ context.Context, _ resource.SchemaRequ
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
-				Computed: true,
+				Computed:    true,
+				Description: "ID of the adserver. This is a unique identifier for the adserver resource.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The name of the adserver.",
 			},
 			"type": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The type of the adserver. This is a read-only field.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"url": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The URL of the adserver.",
 			},
 			"description": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  stringdefault.StaticString(""),
+				Optional:    true,
+				Computed:    true,
+				Description: "The description of the adserver. This field is optional and can be used to provide additional information about the adserver.",
+				Default:     stringdefault.StaticString(""),
 			},
 			"queries": schema.StringAttribute{
-				Computed: true,
-				Optional: true,
-				Default:  stringdefault.StaticString(""),
+				Computed:           true,
+				Optional:           true,
+				DeprecationMessage: "This field is deprecated and will be removed in future versions. Use 'query_parameters' instead.",
+				Description:        "The queries associated with the adserver. This field is optional and can be used to specify additional query parameters for the adserver.",
+				Default:            stringdefault.StaticString(""),
 			},
 			"query_parameters": schema.ListNestedAttribute{
-				Computed: true,
-				Optional: true,
+				Computed:    true,
+				Optional:    true,
+				Description: "A list of query parameters for the adserver. Each parameter has a type, name, and value.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "The type of the query parameter. This field is required and must be one of the following values: 'from-query-parameter', 'from-variable', 'from-header', 'forward', or 'custom'.",
 							Validators: []validator.String{
 								stringvalidator.OneOf("from-query-parameter", "from-variable", "from-header", "forward", "custom"),
 							},
 						},
 						"name": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "The name of the query parameter. This field is required and must be a valid string.",
 						},
 						"value": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: "The value of the query parameter. This field is required and must be a valid string.",
 						},
 					},
 				},

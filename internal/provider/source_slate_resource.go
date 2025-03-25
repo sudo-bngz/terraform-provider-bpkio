@@ -67,30 +67,36 @@ func (r *sourceSlateResource) Schema(_ context.Context, _ resource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The ID of the slate.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The name of the slate.",
 			},
 			"type": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The type of the slate.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"url": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The URL of the slate.",
 			},
 			"description": schema.StringAttribute{
-				Optional: true,
-				Computed: true,
-				Default:  stringdefault.StaticString(""),
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString(""),
+				Description: "A description of the slate.",
 			},
 			"format": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The format of the slate.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

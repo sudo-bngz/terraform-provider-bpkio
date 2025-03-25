@@ -107,103 +107,129 @@ func (d *serviceAdInsertionDataSource) Schema(_ context.Context, _ datasource.Sc
 								Description: "The name of the ad server source.",
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The type of the ad server source.",
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The URL of the ad server source.",
 							},
 							"query_parameters": schema.ListNestedAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The query parameters passed to the ad server requests.",
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"type": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The type of the query parameter (values: `custom`, `forward`, `from-query-parameter`, `from-variable`, `from-header`).",
 										},
 										"name": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The name of the query parameter.",
 										},
 										"value": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The value of the query parameter.",
 										},
 									},
 								},
 							},
 						},
-						Computed: true,
+						Computed:    true,
+						Description: "Configuration of ad server",
 					},
 					"max_duration": schema.Int64Attribute{
-						Computed: true,
-						Optional: true,
+						Computed:    true,
+						Optional:    true,
+						Description: "Pre-roll maximum duration (in seconds)",
 					},
 					"offset": schema.Int64Attribute{
-						Computed: true,
-						Optional: true,
+						Computed:    true,
+						Optional:    true,
+						Description: "Pre-roll relative start time (in seconds)",
 					},
 				},
-				Computed: true,
+				Computed:    true,
+				Description: "Configuration of live pre-roll",
 			},
 			"live_ad_replacement": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"ad_server": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The ID of the ad server.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The name of the ad server.",
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The type of the ad server.",
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The URL of the ad server.",
 							},
 							"query_parameters": schema.ListNestedAttribute{
 								Computed: true,
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"type": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The type of the query parameter (values: `custom`, `forward`, `from-query-parameter`, `from-variable`, `from-header`).",
 										},
 										"name": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The name of the query parameter.",
 										},
 										"value": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "The value of the query parameter.",
 										},
 									},
 								},
 							},
 						},
-						Computed: true,
+						Computed:    true,
+						Description: "Configuration of live ad-replacement",
 					},
 					"gap_filler": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The ID of the slate.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The name of the slate.",
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The type of the slate.",
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "The URL of the slate.",
 							},
 						},
-						Computed: true,
+						Computed:    true,
+						Description: "Configure gap-filler",
 					},
 					"spot_aware": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"mode": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Spot-aware mode (values: `french_addressable_tv`, `spot_to_live` or `disabled`)",
 							},
 						},
-						Computed: true,
+						Computed:    true,
+						Description: "Configure spot-aware feature",
 					},
 				},
-				Computed: true,
+				Computed:    true,
+				Description: "Configuration of live mid-roll",
 			},
 			"advanced_options": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
@@ -216,67 +242,83 @@ func (d *serviceAdInsertionDataSource) Schema(_ context.Context, _ datasource.Sc
 								Computed: true,
 							},
 						},
-						Optional: true,
-						Computed: true,
+						Optional:    true,
+						Computed:    true,
+						Description: "Authorization header to be added to the request to the ad server",
 					},
 				},
-				Optional: true,
-				Computed: true,
+				Optional:    true,
+				Computed:    true,
+				Description: "Advanced options for the service (currently for authorization headers) ",
 			},
 			"enable_ad_transcoding": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "Enable server-side ad transcoding (default: `false`).",
 			},
 			"server_side_ad_tracking": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"enable": schema.BoolAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "Enable server-side ad tracking (default: `false`).",
 					},
 					"check_ad_media_segment_availability": schema.BoolAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "Check ad media segment availability (default: `false`).",
 					},
 				},
-				Computed: true,
+				Computed:    true,
+				Description: "Configure server-side ad tracking.",
 			},
 			"source": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"id": schema.Int64Attribute{
-						Computed: true,
+						Computed:    true,
+						Description: "The ID of the source.",
 					},
 					"name": schema.StringAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "The name of the source.",
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
 					},
 					"url": schema.StringAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "The URL of the source.",
 					},
 					"format": schema.StringAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "The format of the source.",
 					},
 					"description": schema.StringAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "The description of the source.",
 					},
 					"multi_period": schema.BoolAttribute{
-						Computed: true,
+						Computed:    true,
+						Description: "Enable multi-period support for the source.",
 					},
 					"origin": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"custom_headers": schema.ListNestedAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Custom headers to be added to the request to the origin.",
 								NestedObject: schema.NestedAttributeObject{
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "Name of the custom header.",
 										},
 										"value": schema.StringAttribute{
-											Computed: true,
+											Computed:    true,
+											Description: "Value of the custom header.",
 										},
 									},
 								},
 							},
 						},
-						Computed: true,
+						Computed:    true,
+						Description: "Origin configuration for the source.",
 					},
 				},
 				Computed: true,
@@ -296,7 +338,8 @@ func (d *serviceAdInsertionDataSource) Schema(_ context.Context, _ datasource.Sc
 						Computed: true,
 					},
 				},
-				Optional: true,
+				Optional:    true,
+				Description: "Transcoding profile configuration for the service.",
 			},
 		},
 	}

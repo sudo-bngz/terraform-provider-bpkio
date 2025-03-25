@@ -76,42 +76,49 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 		Description: "Manages Ad Insertion service creation (see https://developers.broadpeak.io/reference/adinsertioncontroller_create_v1).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
-				Computed: true,
+				Computed:    true,
+				Description: "ID of the ad insertion service. This is a unique identifier for the service.",
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "Name of the ad insertion service. This is a human-readable name for the service.",
 			},
 			"type": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "Type of the ad insertion service. This indicates the type of service being created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"url": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "URL of the ad insertion service. This is the endpoint where the service can be accessed.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"creation_date": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "Creation date of the ad insertion service. This indicates when the service was created.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"update_date": schema.StringAttribute{
-				WriteOnly: true,
-				Optional:  true,
+				WriteOnly:   true,
+				Optional:    true,
+				Description: "Update date of the ad insertion service. This indicates when the service was last updated.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"state": schema.StringAttribute{
-				Computed: true,
-				Default:  stringdefault.StaticString("enabled"),
+				Computed:    true,
+				Description: "State of the ad insertion service. This indicates the current state of the service. Possible values are 'enabled', 'paused', or 'bypassed'.",
+				Default:     stringdefault.StaticString("enabled"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("enabled", "paused", "bypassed"),
 				},
@@ -119,6 +126,7 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 			"tags": schema.ListAttribute{
 				Optional:    true,
 				Computed:    true,
+				Description: "Tags for the ad insertion service. This is a list of tags associated with the service.",
 				ElementType: types.StringType,
 				Default:     listdefault.StaticValue(types.ListValueMust(types.StringType, []attr.Value{})),
 			},
@@ -127,54 +135,64 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 					"ad_server": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Required: true,
+								Required:    true,
+								Description: "ID of the ad server. This is a unique identifier for the ad server.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Name of the ad server. This is a human-readable name for the ad server.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Type of the ad server. This indicates the type of ad server being used.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "URL of the ad server. This is the endpoint where the ad server can be accessed.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 						},
-						Optional: true,
+						Optional:    true,
+						Description: "Ad server configuration. This is the ad server used for ad replacement.",
 					},
 					"gap_filler": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Required: true,
+								Required:    true,
+								Description: "ID of the gap filler. This is a unique identifier for the gap filler.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Name of the gap filler. This is a human-readable name for the gap filler.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Type of the gap filler. This indicates the type of gap filler being used.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "URL of the gap filler. This is the endpoint where the gap filler can be accessed.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 						},
-						Optional: true,
+						Optional:    true,
+						Description: "Gap filler configuration. This is the gap filler / slate used for ad replacement.",
 					},
 					"spot_aware": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
@@ -183,8 +201,9 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 								Validators: []validator.String{
 									stringvalidator.OneOf("french_addressable_tv", "spot_to_live", "disabled"),
 								},
-								Computed: true,
-								Optional: true,
+								Computed:    true,
+								Optional:    true,
+								Description: "Mode of the spot aware. This indicates the mode of the spot aware feature. (valid values are 'french_addressable_tv', 'spot_to_live', or 'disabled'. Default: `disabled`).",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
@@ -193,45 +212,53 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 						Optional: true,
 					},
 				},
-				Optional: true,
+				Optional:    true,
+				Description: "Live ad replacement configuration. This is the configuration for live ad replacement.",
 			},
 			"live_ad_preroll": schema.SingleNestedAttribute{
 				Attributes: map[string]schema.Attribute{
 					"ad_server": schema.SingleNestedAttribute{
 						Attributes: map[string]schema.Attribute{
 							"id": schema.Int64Attribute{
-								Required: true,
+								Required:    true,
+								Description: "ID of the ad server. This is a unique identifier for the ad server.",
 							},
 							"name": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Name of the ad server. This is a human-readable name for the ad server.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"type": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "Type of the ad server. This indicates the type of ad server being used.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 							"url": schema.StringAttribute{
-								Computed: true,
+								Computed:    true,
+								Description: "URL of the ad server. This is the endpoint where the ad server can be accessed.",
 								PlanModifiers: []planmodifier.String{
 									stringplanmodifier.UseStateForUnknown(),
 								},
 							},
 						},
-						Optional: true,
+						Optional:    true,
+						Description: "Ad server configuration. This is the ad server used for ad pre-roll.",
 					},
 					"max_duration": schema.Int64Attribute{
-						Optional: true,
+						Optional:    true,
+						Description: "Pre-roll maximum duration (in seconds)",
 						PlanModifiers: []planmodifier.Int64{
 							int64planmodifier.UseStateForUnknown(),
 						},
 					},
 					"offset": schema.Int64Attribute{
-						Computed: true,
-						Optional: true,
+						Computed:    true,
+						Optional:    true,
+						Description: "Pre-roll relative start time (in seconds)",
 						PlanModifiers: []planmodifier.Int64{
 							int64planmodifier.UseStateForUnknown(),
 						},
