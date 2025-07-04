@@ -15,50 +15,66 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
+// --------------------------------------------------------------------
+// Type assertions
+// --------------------------------------------------------------------
 var (
 	_ datasource.DataSource              = &transcodingProfileDataSource{}
 	_ datasource.DataSourceWithConfigure = &transcodingProfileDataSource{}
 )
 
-// transcodingProfileDataSource is the data source implementation.
+// --------------------------------------------------------------------
+// Data-source definition
+// --------------------------------------------------------------------
 type transcodingProfileDataSource struct {
 	client *broadpeakio.BroadpeakClient
 }
 
-// NewTranscodingProfileDataSource is a helper function to simplify the provider implementation.
 func NewTranscodingProfileDataSource() datasource.DataSource {
 	return &transcodingProfileDataSource{}
 }
 
-// Configure adds the provider configured client to the data source.
-func (d *transcodingProfileDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	// Add a nil check when handling ProviderData because Terraform
-	// sets that data after it calls the ConfigureProvider RPC.
+// --------------------------------------------------------------------
+// Configure
+// --------------------------------------------------------------------
+func (d *transcodingProfileDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	resp *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
-
-	client, ok := req.ProviderData.(*broadpeakio.BroadpeakClient)
+	c, ok := req.ProviderData.(*broadpeakio.BroadpeakClient)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *broadpeakio.BroadpeakClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Provider Data Type",
+			fmt.Sprintf("Expected *broadpeakio.BroadpeakClient, got %T", req.ProviderData),
 		)
-
 		return
 	}
-
-	d.client = client
+	d.client = c
 }
 
-// Metadata returns the data source type name.
-func (d *transcodingProfileDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+// --------------------------------------------------------------------
+// Metadata
+// --------------------------------------------------------------------
+func (d *transcodingProfileDataSource) Metadata(
+	_ context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_transcoding_profile"
 }
 
-// Schema defines the schema for the data source.
-func (d *transcodingProfileDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+// --------------------------------------------------------------------
+// Schema
+// --------------------------------------------------------------------
+func (d *transcodingProfileDataSource) Schema(
+	_ context.Context,
+	_ datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
@@ -67,6 +83,7 @@ func (d *transcodingProfileDataSource) Schema(_ context.Context, _ datasource.Sc
 			"name": schema.StringAttribute{
 				Computed: true,
 			},
+			// We keep raw JSON as a string for simplicity
 			"content": schema.StringAttribute{
 				Computed: true,
 			},
@@ -77,50 +94,50 @@ func (d *transcodingProfileDataSource) Schema(_ context.Context, _ datasource.Sc
 	}
 }
 
-// Read refreshes the Terraform state with the latest data.
-func (d *transcodingProfileDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state transcodingProfileDataSourceModel
-	var sourceid int64
-
-	diags := req.Config.GetAttribute(ctx, path.Root("id"), &sourceid)
+// --------------------------------------------------------------------
+// Read
+// --------------------------------------------------------------------
+func (d *transcodingProfileDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
+	// Parse ID from config
+	var id int64
+	diags := req.Config.GetAttribute(ctx, path.Root("id"), &id)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read Terraform configuration data into the model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-
-	// Get the source from the API
-	profile, err := d.client.GetTranscodingProfile(uint(sourceid))
+	// Fetch profile from API
+	p, err := d.client.GetTranscodingProfile(uint(id))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read Single Service",
-			fmt.Sprintf("Service with ID %d not found (%s)", sourceid, err.Error()),
+			"Unable to Read Transcoding Profile",
+			fmt.Sprintf("Profile ID %d not found: %s", id, err),
 		)
 		return
 	}
 
-	profileState := transcodingProfileDataSourceModel{
-		ID:         types.Int64Value(int64(profile.Id)),
-		Name:       types.StringValue(profile.Name),
-		Content:    types.StringValue(profile.Content),
-		InternalId: types.StringValue(profile.InternalId),
+	// Build state
+	state := transcodingProfileDataSourceModel{
+		ID:         types.Int64Value(int64(p.Id)),
+		Name:       types.StringValue(p.Name),
+		Content:    types.StringValue(string(p.Content)),
+		InternalId: types.StringValue(p.InternalId),
 	}
 
-	// Set state
-	diags = resp.State.Set(ctx, &profileState)
+	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
-// transcodingProfileDataSourceModel maps sources schema data.
+// --------------------------------------------------------------------
+// State model
+// --------------------------------------------------------------------
 type transcodingProfileDataSourceModel struct {
 	ID         types.Int64  `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
-	Content    types.String `tfsdk:"content"`
+	Content    types.String `tfsdk:"content"` // raw JSON as string
 	InternalId types.String `tfsdk:"internal_id"`
 }

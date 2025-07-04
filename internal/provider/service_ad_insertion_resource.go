@@ -406,17 +406,25 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
+func (r *serviceAdInsertionResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
+	//--------------------------------------------------------------------
+	// 1. Decode plan
+	//--------------------------------------------------------------------
 	var plan serviceAdInsertionResourceModel
-
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Convert from Terraform model to API model
+	//--------------------------------------------------------------------
+	// 2. Convert plan -> API input
+	//--------------------------------------------------------------------
+	// Tags
 	var tags []string
 	if !plan.Tags.IsNull() && !plan.Tags.IsUnknown() {
 		diags = plan.Tags.ElementsAs(ctx, &tags, false)
@@ -426,81 +434,70 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	var serviceData = broadpeakio.CreateAdInsertionInput{
+	input := broadpeakio.CreateAdInsertionInput{
 		Name: plan.Name.ValueString(),
 		Tags: tags,
 	}
 
-	// Add TranscodingProfile if provided
+	// Optional fields
 	if plan.TranscodingProfile != nil {
-		serviceData.TranscodingProfile = &broadpeakio.Identifiable{
+		input.TranscodingProfile = &broadpeakio.Identifiable{
 			Id: uint(plan.TranscodingProfile.ID.ValueInt64()),
 		}
 	}
-
-	// Add Source if provided
 	if plan.Source != nil {
-		serviceData.Source = &broadpeakio.Identifiable{
+		input.Source = &broadpeakio.Identifiable{
 			Id: uint(plan.Source.ID.ValueInt64()),
 		}
 	}
-
-	// Add EnableAdTranscoding if provided
 	if !plan.EnableAdTranscoding.IsNull() {
-		serviceData.EnableAdTranscoding = plan.EnableAdTranscoding.ValueBool()
+		input.EnableAdTranscoding = plan.EnableAdTranscoding.ValueBool()
 	}
 
-	// Add LiveAdPreRoll if provided
+	// LiveAdPreRoll
 	if plan.LiveAdPreRoll != nil {
-		serviceData.LiveAdPreRoll = &broadpeakio.LiveAdPreRoll{
+		input.LiveAdPreRoll = &broadpeakio.LiveAdPreRoll{
 			MaxDuration: uint(plan.LiveAdPreRoll.MaxDuration.ValueInt64()),
 			Offset:      uint(plan.LiveAdPreRoll.Offset.ValueInt64()),
 		}
-
-		// Add AdServer if provided within LiveAdPreRoll
 		if !plan.LiveAdPreRoll.AdServer.ID.IsNull() {
-			serviceData.LiveAdPreRoll.AdServer = &broadpeakio.Identifiable{
+			input.LiveAdPreRoll.AdServer = &broadpeakio.Identifiable{
 				Id: uint(plan.LiveAdPreRoll.AdServer.ID.ValueInt64()),
 			}
 		}
 	}
 
-	// Add LiveAdReplacement if provided
+	// LiveAdReplacement
 	if plan.LiveAdReplacement != nil {
-		serviceData.LiveAdReplacement = &broadpeakio.LiveAdReplacement{}
-
-		// Add AdServer if provided within LiveAdReplacement
+		input.LiveAdReplacement = &broadpeakio.LiveAdReplacement{}
 		if !plan.LiveAdReplacement.AdServer.ID.IsNull() {
-			serviceData.LiveAdReplacement.AdServer = &broadpeakio.Identifiable{
+			input.LiveAdReplacement.AdServer = &broadpeakio.Identifiable{
 				Id: uint(plan.LiveAdReplacement.AdServer.ID.ValueInt64()),
 			}
 		}
-
-		// Add GapFiller if provided
 		if !plan.LiveAdReplacement.GapFiller.ID.IsNull() {
-			serviceData.LiveAdReplacement.GapFiller = &broadpeakio.Identifiable{
+			input.LiveAdReplacement.GapFiller = &broadpeakio.Identifiable{
 				Id: uint(plan.LiveAdReplacement.GapFiller.ID.ValueInt64()),
 			}
 		}
-
-		// Add SpotAware if provided
 		if !plan.LiveAdReplacement.SpotAware.Mode.IsNull() {
-			serviceData.LiveAdReplacement.SpotAware = broadpeakio.SpotAware{
+			input.LiveAdReplacement.SpotAware = broadpeakio.SpotAware{
 				Mode: plan.LiveAdReplacement.SpotAware.Mode.ValueString(),
 			}
 		}
 	}
 
-	// Add ServerSideAdTracking if provided
+	// ServerSideAdTracking
 	if plan.ServerSideAdTracking != nil {
-		serviceData.ServerSideAdTracking = &broadpeakio.ServerSideAdTracking{
+		input.ServerSideAdTracking = &broadpeakio.ServerSideAdTracking{
 			Enable:                          plan.ServerSideAdTracking.Enable.ValueBool(),
 			CheckAdMediaSegmentAvailability: plan.ServerSideAdTracking.CheckAdMediaSegmentAvailability.ValueBool(),
 		}
 	}
 
+	// AdvancedOptions
 	if plan.AdvancedOptions != nil && plan.AdvancedOptions.AuthorizationHeader != nil {
-		serviceData.AdvancedOptions = &broadpeakio.AdvancedOptions{
+		input.AdvancedOptions = &broadpeakio.AdvancedOptions{
 			AuthorizationHeader: broadpeakio.AuthorizationHeader{
 				Name:  plan.AdvancedOptions.AuthorizationHeader.Name.ValueString(),
 				Value: plan.AdvancedOptions.AuthorizationHeader.Value.ValueString(),
@@ -508,25 +505,25 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	// Create new adserver
-	service, err := r.client.CreateAdInsertion(serviceData)
-
+	//--------------------------------------------------------------------
+	// 3. Call Broadpeak API
+	//--------------------------------------------------------------------
+	service, err := r.client.CreateAdInsertion(input)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating adserver",
-			"Could not create adserver, unexpected error: "+err.Error(),
-		)
+		resp.Diagnostics.AddError("Error creating Ad-Insertion", err.Error())
 		return
 	}
 
-	// Convert the []string to types.List
+	//--------------------------------------------------------------------
+	// 4. Build Terraform state
+	//--------------------------------------------------------------------
 	tagsList, diags := types.ListValueFrom(ctx, types.StringType, service.Tags)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Map response body to schema and populate Computed attribute values
-	result := serviceAdInsertionResourceModel{
+
+	state := serviceAdInsertionResourceModel{
 		ID:                  types.Int64Value(int64(service.Id)),
 		Name:                types.StringValue(service.Name),
 		Type:                types.StringValue(service.Type),
@@ -538,17 +535,17 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		EnableAdTranscoding: types.BoolValue(service.EnableAdTranscoding),
 	}
 
-	// Add ServerSideAdTracking if provided
+	// Server-side ad-tracking
 	if service.ServerSideAdTracking.Enable {
-		result.ServerSideAdTracking = &serverSideAdTrackingModel{
+		state.ServerSideAdTracking = &serverSideAdTrackingModel{
 			Enable:                          types.BoolValue(service.ServerSideAdTracking.Enable),
 			CheckAdMediaSegmentAvailability: types.BoolValue(service.ServerSideAdTracking.CheckAdMediaSegmentAvailability),
 		}
 	}
 
-	// Add TranscodingProfile if provided
+	// Transcoding profile
 	if service.TranscodingProfile.Id != 0 {
-		result.TranscodingProfile = &transcodingProfileDataSourceModel{
+		state.TranscodingProfile = &transcodingProfileDataSourceModel{
 			ID:         types.Int64Value(int64(service.TranscodingProfile.Id)),
 			Name:       types.StringValue(service.TranscodingProfile.Name),
 			InternalId: types.StringValue(service.TranscodingProfile.InternalId),
@@ -556,9 +553,9 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	// Add Source if provided
+	// Source
 	if service.Source.Id != 0 {
-		result.Source = &sourceLiteModel{
+		state.Source = &sourceLiteModel{
 			ID:          types.Int64Value(int64(service.Source.Id)),
 			Name:        types.StringValue(service.Source.Name),
 			Type:        types.StringValue(service.Source.Type),
@@ -568,36 +565,36 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	// Add LiveAdReplacement if provided
+	// LiveAdReplacement (ensure spot_aware.mode always set)
 	if service.LiveAdReplacement.AdServer.Id != 0 {
-		result.LiveAdReplacement = &liveAdReplacementLiteModel{
+		mode := service.LiveAdReplacement.SpotAware.Mode
+		if mode == "" {
+			mode = "disabled"
+		}
+		state.LiveAdReplacement = &liveAdReplacementLiteModel{
 			AdServer: adServerLiteModel{
 				ID:   types.Int64Value(int64(service.LiveAdReplacement.AdServer.Id)),
 				Name: types.StringValue(service.LiveAdReplacement.AdServer.Name),
 				Type: types.StringValue(service.LiveAdReplacement.AdServer.Type),
 				URL:  types.StringValue(service.LiveAdReplacement.AdServer.Url),
 			},
+			SpotAware: spotAwareModel{
+				Mode: types.StringValue(mode),
+			},
 		}
-
 		if service.LiveAdReplacement.GapFiller.Id != 0 {
-			result.LiveAdReplacement.GapFiller = gapFillerModel{
+			state.LiveAdReplacement.GapFiller = gapFillerModel{
 				ID:   types.Int64Value(int64(service.LiveAdReplacement.GapFiller.Id)),
 				Name: types.StringValue(service.LiveAdReplacement.GapFiller.Name),
 				Type: types.StringValue(service.LiveAdReplacement.GapFiller.Type),
 				URL:  types.StringValue(service.LiveAdReplacement.GapFiller.Url),
 			}
 		}
-
-		if service.LiveAdReplacement.SpotAware.Mode != "" {
-			result.LiveAdReplacement.SpotAware = spotAwareModel{
-				Mode: types.StringValue(service.LiveAdReplacement.SpotAware.Mode),
-			}
-		}
 	}
 
-	// Add LiveAdPreRoll if provided
+	// LiveAdPreRoll
 	if service.LiveAdPreRoll.AdServer.Id != 0 {
-		result.LiveAdPreRoll = &liveAdPrerollLiteModel{
+		state.LiveAdPreRoll = &liveAdPrerollLiteModel{
 			AdServer: adServerLiteModel{
 				ID:   types.Int64Value(int64(service.LiveAdPreRoll.AdServer.Id)),
 				Name: types.StringValue(service.LiveAdPreRoll.AdServer.Name),
@@ -609,8 +606,9 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	if service.AdvancedOptions.AuthorizationHeader.Name != "" && service.AdvancedOptions.AuthorizationHeader.Value != "" {
-		result.AdvancedOptions = &advancedOptionsModel{
+	// Advanced options
+	if service.AdvancedOptions.AuthorizationHeader.Name != "" || service.AdvancedOptions.AuthorizationHeader.Value != "" {
+		state.AdvancedOptions = &advancedOptionsModel{
 			AuthorizationHeader: &authorizationHeaderModel{
 				Name:  types.StringValue(service.AdvancedOptions.AuthorizationHeader.Name),
 				Value: types.StringValue(service.AdvancedOptions.AuthorizationHeader.Value),
@@ -618,14 +616,11 @@ func (r *serviceAdInsertionResource) Create(ctx context.Context, req resource.Cr
 		}
 	}
 
-	tflog.Debug(ctx, "Setting STATE ", map[string]interface{}{"state": result})
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, result)
+	//--------------------------------------------------------------------
+	// 5. Save state
+	//--------------------------------------------------------------------
+	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read refreshes the Terraform state with the latest data.

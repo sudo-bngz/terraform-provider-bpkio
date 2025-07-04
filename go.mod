@@ -1,6 +1,6 @@
 module terraform-provider-bpkio
 
-go 1.22.7
+go 1.23.5
 
 require (
 	github.com/bashou/bpkio-go-sdk v1.0.0
@@ -32,3 +32,5 @@ require (
 	google.golang.org/grpc v1.69.4 // indirect
 	google.golang.org/protobuf v1.36.3 // indirect
 )
+
+replace github.com/bashou/bpkio-go-sdk => /Users/nbo/go/src/bpkio-go-sdk

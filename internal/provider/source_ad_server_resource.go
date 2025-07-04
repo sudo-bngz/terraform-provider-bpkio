@@ -11,6 +11,7 @@ import (
 	broadpeakio "github.com/bashou/bpkio-go-sdk"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -131,9 +132,14 @@ func (r *sourceAdServerResource) Schema(_ context.Context, _ resource.SchemaRequ
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *sourceAdServerResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
+func (r *sourceAdServerResource) Create(
+	ctx context.Context,
+	req resource.CreateRequest,
+	resp *resource.CreateResponse,
+) {
+	//--------------------------------------------------------------------
+	// 1. Decode the plan into a strongly-typed model
+	//--------------------------------------------------------------------
 	var plan sourceAdServerDataSourceModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -141,80 +147,108 @@ func (r *sourceAdServerResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	// Convert from Terraform model to API model
-	var sourceData = broadpeakio.AdServerInput{
+	//--------------------------------------------------------------------
+	// 2. Build the Broadpeak API input
+	//--------------------------------------------------------------------
+	adInput := broadpeakio.AdServerInput{
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Url:         plan.URL.ValueString(),
 		Queries:     plan.Queries.ValueString(),
 	}
 
-	// Handle QueryParameters data if present
-	if len(plan.QueryParameters) > 0 {
-		// Process parameters
-		var parameters []broadpeakio.QueryParam
-		for _, param := range plan.QueryParameters {
-			parameters = append(parameters, broadpeakio.QueryParam{
-				Type:  param.Type.ValueString(),
-				Name:  param.Name.ValueString(),
-				Value: param.Value.ValueString(),
+	// Decode query_parameters list → slice for API
+	if !plan.QueryParameters.IsNull() && !plan.QueryParameters.IsUnknown() {
+		var paramSlice []queryParametersModel
+		diags := plan.QueryParameters.ElementsAs(ctx, &paramSlice, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		for _, p := range paramSlice {
+			adInput.QueryParameters = append(adInput.QueryParameters, broadpeakio.QueryParam{
+				Type:  p.Type.ValueString(),
+				Name:  p.Name.ValueString(),
+				Value: p.Value.ValueString(),
 			})
 		}
-		sourceData.QueryParameters = parameters
-	} else {
-		// Ensure we use empty slice, not null
-		sourceData.QueryParameters = []broadpeakio.QueryParam{}
 	}
 
-	// Create new adserver
-	source, err := r.client.CreateAdServer(sourceData)
+	//--------------------------------------------------------------------
+	// 3. Call Broadpeak to create the Ad-Server
+	//--------------------------------------------------------------------
+	created, err := r.client.CreateAdServer(adInput)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating adserver",
-			"Could not create adserver, unexpected error: "+err.Error(),
+			"Error Creating Ad-Server",
+			fmt.Sprintf("Could not create Ad-Server: %s", err),
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	result := sourceAdServerDataSourceModel{
-		ID:          types.Int64Value(int64(source.Id)),
-		Name:        types.StringValue(source.Name),
-		Type:        types.StringValue(source.Type),
-		URL:         types.StringValue(source.Url),
-		Description: types.StringValue(source.Description),
-		Queries:     types.StringValue(source.Queries),
+	//--------------------------------------------------------------------
+	// 4. Convert API → Terraform state
+	//--------------------------------------------------------------------
+	// Object type for a single parameter
+	paramObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"type":  types.StringType,
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
 	}
 
-	// Handle QueryParameters data if present
-	if len(source.QueryParameters) > 0 {
-		// Process parameters
-		var params []queryParametersModel
-		for _, param := range source.QueryParameters {
-			params = append(params, queryParametersModel{
-				Type:  types.StringValue(param.Type),
-				Name:  types.StringValue(param.Name),
-				Value: types.StringValue(param.Value),
-			})
+	var paramValues []attr.Value
+	for _, p := range created.QueryParameters {
+		objVal, diag := types.ObjectValue(
+			paramObjType.AttrTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(p.Type),
+				"name":  types.StringValue(p.Name),
+				"value": types.StringValue(p.Value),
+			},
+		)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
 		}
+		paramValues = append(paramValues, objVal)
+	}
 
-		result.QueryParameters = params
+	var paramsList types.List
+	if len(paramValues) > 0 {
+		paramsList = types.ListValueMust(paramObjType, paramValues)
 	} else {
-		// Ensure we use empty slice, not null
-		result.QueryParameters = []queryParametersModel{}
+		paramsList = types.ListNull(paramObjType)
 	}
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, result)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	newState := sourceAdServerDataSourceModel{
+		ID:              types.Int64Value(int64(created.Id)),
+		Name:            types.StringValue(created.Name),
+		Description:     types.StringValue(created.Description),
+		Type:            types.StringValue(created.Type),
+		URL:             types.StringValue(created.Url),
+		Queries:         types.StringValue(created.Queries),
+		QueryParameters: paramsList,
 	}
+
+	//--------------------------------------------------------------------
+	// 5. Save state
+	//--------------------------------------------------------------------
+	diags = resp.State.Set(ctx, newState)
+	resp.Diagnostics.Append(diags...)
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *sourceAdServerResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	// Get current state
+func (r *sourceAdServerResource) Read(
+	ctx context.Context,
+	req resource.ReadRequest,
+	resp *resource.ReadResponse,
+) {
+	//--------------------------------------------------------------------
+	// 1. Load the prior state (contains the ID)
+	//--------------------------------------------------------------------
 	var state sourceAdServerDataSourceModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -222,143 +256,189 @@ func (r *sourceAdServerResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	// Get refreshed adserver value from HashiCups
-	source, err := r.client.GetAdServer(uint(state.ID.ValueInt64()))
+	//--------------------------------------------------------------------
+	// 2. Query Broadpeak for the latest object
+	//--------------------------------------------------------------------
+	src, err := r.client.GetAdServer(uint(state.ID.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read Single Service",
-			fmt.Sprintf("Service with ID %d not found (%s)", state.ID, err.Error()),
+			"Unable to Read Source Ad-Server",
+			fmt.Sprintf("Ad-Server with ID %d not found (%s)", state.ID.ValueInt64(), err),
 		)
 		return
 	}
 
-	state = sourceAdServerDataSourceModel{
-		ID:          types.Int64Value(int64(source.Id)),
-		Name:        types.StringValue(source.Name),
-		Type:        types.StringValue(source.Type),
-		URL:         types.StringValue(source.Url),
-		Description: types.StringValue(source.Description),
-		Queries:     types.StringValue(source.Queries),
+	//--------------------------------------------------------------------
+	// 3. Convert QueryParameters -> types.List
+	//--------------------------------------------------------------------
+	paramObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"type":  types.StringType,
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
 	}
 
-	// Handle QueryParameters data if present
-	if len(source.QueryParameters) > 0 {
-		// Process parameters
-		var params []queryParametersModel
-		for _, param := range source.QueryParameters {
-			params = append(params, queryParametersModel{
-				Type:  types.StringValue(param.Type),
-				Name:  types.StringValue(param.Name),
-				Value: types.StringValue(param.Value),
-			})
+	var paramValues []attr.Value
+	for _, p := range src.QueryParameters {
+		objVal, diag := types.ObjectValue(
+			paramObjType.AttrTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(p.Type),
+				"name":  types.StringValue(p.Name),
+				"value": types.StringValue(p.Value),
+			},
+		)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
 		}
+		paramValues = append(paramValues, objVal)
+	}
 
-		state.QueryParameters = params
+	var paramsList types.List
+	if len(paramValues) > 0 {
+		paramsList = types.ListValueMust(paramObjType, paramValues)
 	} else {
-		// Ensure we use empty slice, not null
-		state.QueryParameters = []queryParametersModel{}
+		paramsList = types.ListNull(paramObjType)
 	}
 
-	// Set refreshed state
-	diags = resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	//--------------------------------------------------------------------
+	// 4. Build the new state object
+	//--------------------------------------------------------------------
+	newState := sourceAdServerDataSourceModel{
+		ID:              types.Int64Value(int64(src.Id)),
+		Name:            types.StringValue(src.Name),
+		Description:     types.StringValue(src.Description),
+		Type:            types.StringValue(src.Type),
+		URL:             types.StringValue(src.Url),
+		Queries:         types.StringValue(src.Queries),
+		QueryParameters: paramsList,
 	}
+
+	//--------------------------------------------------------------------
+	// 5. Save state
+	//--------------------------------------------------------------------
+	diags = resp.State.Set(ctx, newState)
+	resp.Diagnostics.Append(diags...)
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *sourceAdServerResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan and current state
+func (r *sourceAdServerResource) Update(
+	ctx context.Context,
+	req resource.UpdateRequest,
+	resp *resource.UpdateResponse,
+) {
+	//--------------------------------------------------------------------
+	// 1. Decode the planned values
+	//--------------------------------------------------------------------
 	var plan sourceAdServerDataSourceModel
-	// Get planned changes
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Prepare the update data
-	var sourceData = broadpeakio.AdServerInput{
+	//--------------------------------------------------------------------
+	// 2. Build the Broadpeak input
+	//--------------------------------------------------------------------
+	updInput := broadpeakio.AdServerInput{
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Url:         plan.URL.ValueString(),
 		Queries:     plan.Queries.ValueString(),
 	}
 
-	// Handle QueryParameters data if present
-	if len(plan.QueryParameters) > 0 {
-		// Process parameters
-		var parameters []broadpeakio.QueryParam
-		for _, param := range plan.QueryParameters {
-			parameters = append(parameters, broadpeakio.QueryParam{
-				Type:  param.Type.ValueString(),
-				Name:  param.Name.ValueString(),
-				Value: param.Value.ValueString(),
+	if !plan.QueryParameters.IsNull() && !plan.QueryParameters.IsUnknown() {
+		var paramSlice []queryParametersModel
+		diags := plan.QueryParameters.ElementsAs(ctx, &paramSlice, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		for _, p := range paramSlice {
+			updInput.QueryParameters = append(updInput.QueryParameters, broadpeakio.QueryParam{
+				Type:  p.Type.ValueString(),
+				Name:  p.Name.ValueString(),
+				Value: p.Value.ValueString(),
 			})
 		}
-		sourceData.QueryParameters = parameters
-	} else {
-		// Ensure we use empty slice, not null
-		sourceData.QueryParameters = []broadpeakio.QueryParam{}
 	}
 
-	// Retrieve ID from plan/state
-	adserverID := uint(plan.ID.ValueInt64())
-	// Update existing adserver
-	_, err := r.client.UpdateAdServer(adserverID, sourceData)
-	if err != nil {
+	//--------------------------------------------------------------------
+	// 3. Call the Broadpeak API
+	//--------------------------------------------------------------------
+	adID := uint(plan.ID.ValueInt64())
+	if _, err := r.client.UpdateAdServer(adID, updInput); err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating adserver",
-			"Could not update adserver, unexpected error: "+err.Error(),
+			"Error Updating Ad-Server",
+			fmt.Sprintf("Could not update ad-server ID %d: %s", adID, err),
 		)
 		return
 	}
 
-	// Fetch updated items from GetAdServer
-	source, err := r.client.GetAdServer(adserverID)
+	//--------------------------------------------------------------------
+	// 4. Re-query to obtain the authoritative object
+	//--------------------------------------------------------------------
+	src, err := r.client.GetAdServer(adID)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error Reading AdServer",
-			fmt.Sprintf("Could not fetch adserver ID %d: %s", adserverID, err.Error()),
+			"Error Reading Updated Ad-Server",
+			fmt.Sprintf("Could not fetch ad-server ID %d after update: %s", adID, err),
 		)
 		return
 	}
 
-	// Map response body to schema and populate Computed attribute values
-	result := sourceAdServerDataSourceModel{
-		ID:          types.Int64Value(int64(source.Id)),
-		Name:        types.StringValue(source.Name),
-		Type:        types.StringValue(source.Type),
-		URL:         types.StringValue(source.Url),
-		Description: types.StringValue(source.Description),
-		Queries:     types.StringValue(source.Queries),
+	//--------------------------------------------------------------------
+	// 5. Build query_parameters -> types.List
+	//--------------------------------------------------------------------
+	paramObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"type":  types.StringType,
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
 	}
 
-	// Handle QueryParameters data if present
-	if len(source.QueryParameters) > 0 {
-		// Process parameters
-		var params []queryParametersModel
-		for _, param := range source.QueryParameters {
-			params = append(params, queryParametersModel{
-				Type:  types.StringValue(param.Type),
-				Name:  types.StringValue(param.Name),
-				Value: types.StringValue(param.Value),
-			})
+	var paramVals []attr.Value
+	for _, p := range src.QueryParameters {
+		objVal, diag := types.ObjectValue(
+			paramObjType.AttrTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(p.Type),
+				"name":  types.StringValue(p.Name),
+				"value": types.StringValue(p.Value),
+			},
+		)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
 		}
-
-		result.QueryParameters = params
-	} else {
-		// Ensure we use empty slice, not null
-		result.QueryParameters = []queryParametersModel{}
+		paramVals = append(paramVals, objVal)
 	}
 
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, result)
+	var paramsList types.List
+	if len(paramVals) > 0 {
+		paramsList = types.ListValueMust(paramObjType, paramVals)
+	} else {
+		paramsList = types.ListNull(paramObjType)
+	}
+
+	//--------------------------------------------------------------------
+	// 6. Write the new state
+	//--------------------------------------------------------------------
+	newState := sourceAdServerDataSourceModel{
+		ID:              types.Int64Value(int64(src.Id)),
+		Name:            types.StringValue(src.Name),
+		Description:     types.StringValue(src.Description),
+		Type:            types.StringValue(src.Type),
+		URL:             types.StringValue(src.Url),
+		Queries:         types.StringValue(src.Queries),
+		QueryParameters: paramsList,
+	}
+
+	diags = resp.State.Set(ctx, newState)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.

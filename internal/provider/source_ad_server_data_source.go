@@ -9,6 +9,7 @@ import (
 
 	broadpeakio "github.com/bashou/bpkio-go-sdk"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -99,65 +100,94 @@ func (d *sourceAdServerDataSource) Schema(_ context.Context, _ datasource.Schema
 	}
 }
 
-// Read refreshes the Terraform state with the latest data.
-func (d *sourceAdServerDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state sourceAdServerDataSourceModel
-	var sourceid int64
-
-	diags := req.Config.GetAttribute(ctx, path.Root("id"), &sourceid)
+func (d *sourceAdServerDataSource) Read(
+	ctx context.Context,
+	req datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
+	//--------------------------------------------------------------------
+	// 1. Parse the ID from configuration
+	//--------------------------------------------------------------------
+	var adServerID int64
+	diags := req.Config.GetAttribute(ctx, path.Root("id"), &adServerID)
 	resp.Diagnostics.Append(diags...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Read Terraform configuration data into the model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-
-	// Get the source from the API
-	source, err := d.client.GetAdServer(uint(sourceid))
+	//--------------------------------------------------------------------
+	// 2. Call the Broadpeak API
+	//--------------------------------------------------------------------
+	src, err := d.client.GetAdServer(uint(adServerID))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read Single Service",
-			fmt.Sprintf("Service with ID %d not found (%s)", sourceid, err.Error()),
+			"Unable to Read Source Ad-Server",
+			fmt.Sprintf("Ad-Server with ID %d not found (%s)", adServerID, err),
 		)
 		return
 	}
 
-	sourceState := sourceAdServerDataSourceModel{
-		ID:      types.Int64Value(int64(source.Id)),
-		Name:    types.StringValue(source.Name),
-		Type:    types.StringValue(source.Type),
-		URL:     types.StringValue(source.Url),
-		Queries: types.StringValue(source.Queries),
-		QueryParameters: func() []queryParametersModel {
-			var params []queryParametersModel
-			for _, param := range source.QueryParameters {
-				params = append(params, queryParametersModel{
-					Type:  types.StringValue(param.Type),
-					Name:  types.StringValue(param.Name),
-					Value: types.StringValue(param.Value),
-				})
-			}
-			return params
-		}(),
+	//--------------------------------------------------------------------
+	// 3. Build query_parameters -> types.List
+	//--------------------------------------------------------------------
+	// Object schema for a single parameter
+	paramObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"type":  types.StringType,
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
 	}
 
-	// Set state
-	diags = resp.State.Set(ctx, &sourceState)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	var paramValues []attr.Value
+	for _, p := range src.QueryParameters {
+		objVal, diag := types.ObjectValue(
+			paramObjType.AttrTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(p.Type),
+				"name":  types.StringValue(p.Name),
+				"value": types.StringValue(p.Value),
+			},
+		)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
+		}
+		paramValues = append(paramValues, objVal)
 	}
+
+	var paramsList types.List
+	if len(paramValues) > 0 {
+		paramsList = types.ListValueMust(paramObjType, paramValues)
+	} else {
+		// List is absent/empty
+		paramsList = types.ListNull(paramObjType)
+	}
+
+	//--------------------------------------------------------------------
+	// 4. Populate Terraform state
+	//--------------------------------------------------------------------
+	state := sourceAdServerDataSourceModel{
+		ID:              types.Int64Value(int64(src.Id)),
+		Name:            types.StringValue(src.Name),
+		Description:     types.StringValue(src.Description),
+		Type:            types.StringValue(src.Type),
+		URL:             types.StringValue(src.Url),
+		Queries:         types.StringValue(src.Queries),
+		QueryParameters: paramsList,
+	}
+
+	diags = resp.State.Set(ctx, &state)
+	resp.Diagnostics.Append(diags...)
 }
 
 // sourceModel maps source schema data.
 type sourceAdServerDataSourceModel struct {
-	ID              types.Int64            `tfsdk:"id"`
-	Name            types.String           `tfsdk:"name"`
-	Description     types.String           `tfsdk:"description"`
-	Type            types.String           `tfsdk:"type"`
-	URL             types.String           `tfsdk:"url"`
-	Queries         types.String           `tfsdk:"queries"`
-	QueryParameters []queryParametersModel `tfsdk:"query_parameters"`
+	ID              types.Int64  `tfsdk:"id"`
+	Name            types.String `tfsdk:"name"`
+	Description     types.String `tfsdk:"description"`
+	Type            types.String `tfsdk:"type"`
+	URL             types.String `tfsdk:"url"`
+	Queries         types.String `tfsdk:"queries"`
+	QueryParameters types.List   `tfsdk:"query_parameters"`
 }

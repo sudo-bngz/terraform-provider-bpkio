@@ -9,73 +9,82 @@ import (
 
 	broadpeakio "github.com/bashou/bpkio-go-sdk"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
+// --------------------------------------------------------------------
+// Interface assertions
+// --------------------------------------------------------------------
 var (
-	_ datasource.DataSource              = &transcodingProfileDataSource{}
-	_ datasource.DataSourceWithConfigure = &transcodingProfileDataSource{}
+	_ datasource.DataSource              = &transcodingProfilesDataSource{}
+	_ datasource.DataSourceWithConfigure = &transcodingProfilesDataSource{}
 )
 
-// transcodingProfilesDataSource is the data source implementation.
+// --------------------------------------------------------------------
+// Data-source definition
+// --------------------------------------------------------------------
 type transcodingProfilesDataSource struct {
 	client *broadpeakio.BroadpeakClient
 }
 
-// NewTranscodingProfilesDataSource is a helper function to simplify the provider implementation.
 func NewTranscodingProfilesDataSource() datasource.DataSource {
 	return &transcodingProfilesDataSource{}
 }
 
-// Configure adds the provider configured client to the data source.
-func (d *transcodingProfilesDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
-	// Add a nil check when handling ProviderData because Terraform
-	// sets that data after it calls the ConfigureProvider RPC.
+// --------------------------------------------------------------------
+// Configure
+// --------------------------------------------------------------------
+func (d *transcodingProfilesDataSource) Configure(
+	_ context.Context,
+	req datasource.ConfigureRequest,
+	resp *datasource.ConfigureResponse,
+) {
 	if req.ProviderData == nil {
 		return
 	}
-
-	client, ok := req.ProviderData.(*broadpeakio.BroadpeakClient)
+	c, ok := req.ProviderData.(*broadpeakio.BroadpeakClient)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *broadpeakio.BroadpeakClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			"Unexpected Provider Data",
+			fmt.Sprintf("Expected *broadpeakio.BroadpeakClient, got %T", req.ProviderData),
 		)
-
 		return
 	}
-
-	d.client = client
+	d.client = c
 }
 
-// Metadata returns the data source type name.
-func (d *transcodingProfilesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+// --------------------------------------------------------------------
+// Metadata
+// --------------------------------------------------------------------
+func (d *transcodingProfilesDataSource) Metadata(
+	_ context.Context,
+	req datasource.MetadataRequest,
+	resp *datasource.MetadataResponse,
+) {
 	resp.TypeName = req.ProviderTypeName + "_transcoding_profiles"
 }
 
-// Schema defines the schema for the data source.
-func (d *transcodingProfilesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+// --------------------------------------------------------------------
+// Schema
+// --------------------------------------------------------------------
+func (d *transcodingProfilesDataSource) Schema(
+	_ context.Context,
+	_ datasource.SchemaRequest,
+	resp *datasource.SchemaResponse,
+) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"profiles": schema.ListNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id": schema.Int64Attribute{
-							Computed: true,
-						},
-						"name": schema.StringAttribute{
-							Computed: true,
-						},
-						"content": schema.StringAttribute{
-							Computed: true,
-						},
-						"internal_id": schema.StringAttribute{
-							Computed: true,
-						},
+						"id":          schema.Int64Attribute{Computed: true},
+						"name":        schema.StringAttribute{Computed: true},
+						"content":     schema.StringAttribute{Computed: true},
+						"internal_id": schema.StringAttribute{Computed: true},
 					},
 				},
 			},
@@ -83,42 +92,67 @@ func (d *transcodingProfilesDataSource) Schema(_ context.Context, _ datasource.S
 	}
 }
 
-// Read refreshes the Terraform state with the latest data.
-func (d *transcodingProfilesDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state transcodingProfilesDataSourceModel
-
-	// Read Terraform configuration data into the model
-	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
-
-	transcoding_profiles, err := d.client.GetAllTranscodingProfiles(0, 2000)
-
+// --------------------------------------------------------------------
+// Read
+// --------------------------------------------------------------------
+func (d *transcodingProfilesDataSource) Read(
+	ctx context.Context,
+	_ datasource.ReadRequest,
+	resp *datasource.ReadResponse,
+) {
+	// 1. Call the Broadpeak API
+	list, err := d.client.GetAllTranscodingProfiles(0, 2000)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to Read Transcoding Profiles",
-			err.Error(),
+		resp.Diagnostics.AddError("Unable to List Transcoding Profiles", err.Error())
+		return
+	}
+
+	// 2. Build Terraform-typed list
+	profileObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":          types.Int64Type,
+			"name":        types.StringType,
+			"content":     types.StringType,
+			"internal_id": types.StringType,
+		},
+	}
+
+	var objs []attr.Value
+	for _, p := range list {
+		objVal, diag := types.ObjectValue(
+			profileObjType.AttrTypes,
+			map[string]attr.Value{
+				"id":          types.Int64Value(int64(p.Id)),
+				"name":        types.StringValue(p.Name),
+				"content":     types.StringValue(string(p.Content)), // Raw JSON → string
+				"internal_id": types.StringValue(p.InternalId),
+			},
 		)
-		return
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
+		}
+		objs = append(objs, objVal)
 	}
 
-	state.Profiles = []transcodingProfileDataSourceModel{}
-	for _, profile := range transcoding_profiles {
-		state.Profiles = append(state.Profiles, transcodingProfileDataSourceModel{
-			ID:         types.Int64Value(int64(profile.Id)),
-			Name:       types.StringValue(profile.Name),
-			Content:    types.StringValue(profile.Content),
-			InternalId: types.StringValue(profile.InternalId),
-		})
+	var profilesList types.List
+	if len(objs) > 0 {
+		profilesList = types.ListValueMust(profileObjType, objs)
+	} else {
+		profilesList = types.ListNull(profileObjType)
 	}
 
-	// Set state
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	// 3. Set state
+	state := transcodingProfilesDataSourceModel{
+		Profiles: profilesList,
 	}
+	diag := resp.State.Set(ctx, state)
+	resp.Diagnostics.Append(diag...)
 }
 
-// transcodingProfileDataSourceModel maps the data source schema data.
+// --------------------------------------------------------------------
+// State model
+// --------------------------------------------------------------------
 type transcodingProfilesDataSourceModel struct {
-	Profiles []transcodingProfileDataSourceModel `tfsdk:"profiles"`
+	Profiles types.List `tfsdk:"profiles"` // List<Object>
 }
