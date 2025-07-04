@@ -9,10 +9,12 @@ import (
 
 	broadpeakio "github.com/bashou/bpkio-go-sdk"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -129,6 +131,57 @@ func (d *sourceLiveDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
+	var originAttr types.Object
+
+	customHeaderType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
+	}
+
+	if len(source.Origin.CustomHeaders) > 0 {
+		var headerValues []attr.Value
+
+		for _, h := range source.Origin.CustomHeaders {
+			headerObj, diag := types.ObjectValue(
+				customHeaderType.AttrTypes,
+				map[string]attr.Value{
+					"name":  types.StringValue(h.Name),
+					"value": types.StringValue(h.Value),
+				},
+			)
+			if diag.HasError() {
+				resp.Diagnostics.Append(diag...)
+				return
+			}
+			headerValues = append(headerValues, headerObj)
+		}
+
+		headersList, diag := types.ListValue(customHeaderType, headerValues)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
+		}
+
+		originAttr, diag = types.ObjectValue(
+			map[string]attr.Type{
+				"custom_headers": types.ListType{ElemType: customHeaderType},
+			},
+			map[string]attr.Value{
+				"custom_headers": headersList,
+			},
+		)
+		if diag.HasError() {
+			resp.Diagnostics.Append(diag...)
+			return
+		}
+	} else {
+		originAttr = types.ObjectNull(map[string]attr.Type{
+			"custom_headers": types.ListType{ElemType: customHeaderType},
+		})
+	}
+
 	sourceState := sourceLiveDataSourceModel{
 		ID:          types.Int64Value(int64(source.Id)),
 		Name:        types.StringValue(source.Name),
@@ -137,19 +190,7 @@ func (d *sourceLiveDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		Description: types.StringValue(source.Description),
 		MultiPeriod: types.BoolValue(source.MultiPeriod),
 		Format:      types.StringValue(source.Format),
-
-		Origin: &originModel{
-			CustomHeaders: func() []customHeadersModel {
-				var headers []customHeadersModel
-				for _, header := range source.Origin.CustomHeaders {
-					headers = append(headers, customHeadersModel{
-						Name:  types.StringValue(header.Name),
-						Value: types.StringValue(header.Value),
-					})
-				}
-				return headers
-			}(),
-		},
+		Origin:      originAttr,
 	}
 
 	// Set state
@@ -162,12 +203,12 @@ func (d *sourceLiveDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 // sourceModel maps source schema data.
 type sourceLiveDataSourceModel struct {
-	ID          types.Int64  `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Type        types.String `tfsdk:"type"`
-	URL         types.String `tfsdk:"url"`
-	Format      types.String `tfsdk:"format"`
-	Description types.String `tfsdk:"description"`
-	MultiPeriod types.Bool   `tfsdk:"multi_period"`
-	Origin      *originModel `tfsdk:"origin"`
+	ID          types.Int64           `tfsdk:"id"`
+	Name        types.String          `tfsdk:"name"`
+	Type        types.String          `tfsdk:"type"`
+	URL         types.String          `tfsdk:"url"`
+	Format      types.String          `tfsdk:"format"`
+	Description types.String          `tfsdk:"description"`
+	MultiPeriod types.Bool            `tfsdk:"multi_period"`
+	Origin      basetypes.ObjectValue `tfsdk:"origin"`
 }
