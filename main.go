@@ -4,10 +4,10 @@
 package main
 
 import (
+	"bpkio-terraform-provider-bpkio/internal/provider"
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-bpkio/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )

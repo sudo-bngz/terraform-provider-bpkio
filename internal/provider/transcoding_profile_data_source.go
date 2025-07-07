@@ -138,6 +138,6 @@ func (d *transcodingProfileDataSource) Read(
 type transcodingProfileDataSourceModel struct {
 	ID         types.Int64  `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
-	Content    types.String `tfsdk:"content"` // raw JSON as string
+	Content    types.String `tfsdk:"content"`
 	InternalId types.String `tfsdk:"internal_id"`
 }

@@ -1,7 +1,7 @@
 default: fmt lint install generate
 
 build:
-	go build -v ./...
+	go build -o terraform-provider-bpkio
 
 install: build
 	go install -v ./...
