@@ -904,6 +904,10 @@ func (r *serviceAdInsertionResource) Update(ctx context.Context, req resource.Up
 			Offset:      types.Int64Value(int64(service.LiveAdPreRoll.Offset)),
 		}
 	}
+	mode := service.LiveAdReplacement.SpotAware.Mode
+	if mode == "" {
+		mode = "disabled"
+	}
 
 	if service.LiveAdReplacement.AdServer.Id != 0 {
 		result.LiveAdReplacement = &liveAdReplacementLiteModel{
@@ -920,7 +924,7 @@ func (r *serviceAdInsertionResource) Update(ctx context.Context, req resource.Up
 				URL:  types.StringValue(service.LiveAdReplacement.GapFiller.Url),
 			},
 			SpotAware: spotAwareModel{
-				Mode: types.StringValue(service.LiveAdReplacement.SpotAware.Mode),
+				Mode: types.StringValue(mode),
 			},
 		}
 	}
