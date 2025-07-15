@@ -4,7 +4,7 @@
 package main
 
 import (
-	"bpkio-terraform-provider-bpkio/internal/provider"
+	"bpkio-terraform-provider/internal/provider"
 	"context"
 	"flag"
 	"log"

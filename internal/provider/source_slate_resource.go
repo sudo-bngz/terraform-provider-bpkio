@@ -87,6 +87,9 @@ func (r *sourceSlateResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"url": schema.StringAttribute{
 				Required:    true,
 				Description: "The URL of the slate.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
@@ -97,9 +100,6 @@ func (r *sourceSlateResource) Schema(_ context.Context, _ resource.SchemaRequest
 			"format": schema.StringAttribute{
 				Computed:    true,
 				Description: "The format of the slate.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 		},
 	}

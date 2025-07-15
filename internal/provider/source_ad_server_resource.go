@@ -346,6 +346,7 @@ func (r *sourceAdServerResource) Update(
 		Description: plan.Description.ValueString(),
 		Url:         plan.URL.ValueString(),
 		Queries:     plan.Queries.ValueString(),
+		Template:    "custom",
 	}
 
 	if !plan.QueryParameters.IsNull() && !plan.QueryParameters.IsUnknown() {
