@@ -73,7 +73,7 @@ func (r *serviceAdInsertionResource) Metadata(_ context.Context, req resource.Me
 // Schema defines the schema for the resource.
 func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages Ad Insertion service creation (see https://developers.broadpeak.io/reference/adinsertioncontroller_create_v1).",
+		Description: "Manages Ad Insertion service creation (see https://developers.broadpeak.io/reference/adinsertiontroller_create_v1).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.Int64Attribute{
 				Computed:    true,
@@ -85,6 +85,9 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the ad insertion service. This is a human-readable name for the service.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"type": schema.StringAttribute{
 				Computed:    true,
@@ -172,9 +175,6 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 							"name": schema.StringAttribute{
 								Computed:    true,
 								Description: "Name of the gap filler. This is a human-readable name for the gap filler.",
-								PlanModifiers: []planmodifier.String{
-									stringplanmodifier.UseStateForUnknown(),
-								},
 							},
 							"type": schema.StringAttribute{
 								Computed:    true,
@@ -331,9 +331,6 @@ func (r *serviceAdInsertionResource) Schema(_ context.Context, _ resource.Schema
 					},
 					"name": schema.StringAttribute{
 						Computed: true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseStateForUnknown(),
-						},
 					},
 					"type": schema.StringAttribute{
 						Computed: true,
@@ -632,7 +629,6 @@ func (r *serviceAdInsertionResource) Read(ctx context.Context, req resource.Read
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 	// Get refreshed adserver value from HashiCups
 	service, err := r.client.GetAdInsertion(uint(state.ID.ValueInt64()))
 	if err != nil {
@@ -648,6 +644,11 @@ func (r *serviceAdInsertionResource) Read(ctx context.Context, req resource.Read
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
+	}
+
+	mode := service.LiveAdReplacement.SpotAware.Mode
+	if mode == "" {
+		mode = "disabled"
 	}
 
 	state = serviceAdInsertionResourceModel{
@@ -695,7 +696,7 @@ func (r *serviceAdInsertionResource) Read(ctx context.Context, req resource.Read
 				URL:  types.StringValue(service.LiveAdReplacement.GapFiller.Url),
 			},
 			SpotAware: spotAwareModel{
-				Mode: types.StringValue(service.LiveAdReplacement.SpotAware.Mode),
+				Mode: types.StringValue(mode),
 			},
 		}
 	}

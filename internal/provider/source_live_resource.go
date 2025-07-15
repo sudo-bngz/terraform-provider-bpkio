@@ -80,6 +80,9 @@ func (r *sourceLiveResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "The name of the source live.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"type": schema.StringAttribute{
 				Computed:    true,
@@ -91,13 +94,13 @@ func (r *sourceLiveResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"url": schema.StringAttribute{
 				Required:    true,
 				Description: "The URL of the source live.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"format": schema.StringAttribute{
 				Computed:    true,
 				Description: "The format of the source live.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,

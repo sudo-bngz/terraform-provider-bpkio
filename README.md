@@ -5,7 +5,7 @@ This Terraform Provider allows you to manage BPK.io resources through Terraform.
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.22
+- [Go](https://golang.org/doc/install) >= 1.23
 
 ## Building The Provider
 
@@ -39,7 +39,7 @@ Configure the provider with your BPK.io credentials:
 
 ```hcl
 provider "bpkio" {
-  api_key = var.bpkio_api_key  # Can also be set via BPKIO_API_KEY environment variable
+  api_key = var.bpkio_api_key  # Can also be set via  BPKIO_API_KEY environment variable
 }
 ```
 

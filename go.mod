@@ -1,4 +1,4 @@
-module bpkio-terraform-provider-bpkio
+module bpkio-terraform-provider
 
 go 1.24.4
 
