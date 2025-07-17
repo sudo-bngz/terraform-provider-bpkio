@@ -488,6 +488,134 @@ func (d *serviceAdInsertionDataSource) Read(ctx context.Context, req datasource.
 	}
 }
 
+func flattenAdInsertionOutput(s broadpeakio.AdInsertionOutput, ctx context.Context) (*serviceAdInsertionDataSourceModel, error) {
+	// Tags
+	tagsList, diags := types.ListValueFrom(ctx, types.StringType, s.Tags)
+	if diags.HasError() {
+		return nil, fmt.Errorf("error converting tags: %v", diags)
+	}
+
+	// Advanced Options
+	var advancedOptions *advancedOptionsModel
+	if s.AdvancedOptions.AuthorizationHeader.Name != "" || s.AdvancedOptions.AuthorizationHeader.Value != "" {
+		advancedOptions = &advancedOptionsModel{
+			AuthorizationHeader: &authorizationHeaderModel{
+				Name:  types.StringValue(s.AdvancedOptions.AuthorizationHeader.Name),
+				Value: types.StringValue(s.AdvancedOptions.AuthorizationHeader.Value),
+			},
+		}
+	}
+
+	// Server Side Ad Tracking
+	serverSideAdTracking := &serverSideAdTrackingModel{
+		Enable:                          types.BoolValue(s.ServerSideAdTracking.Enable),
+		CheckAdMediaSegmentAvailability: types.BoolValue(s.ServerSideAdTracking.CheckAdMediaSegmentAvailability),
+	}
+
+	// Source
+	src := &sourceModel{
+		ID:          types.Int64Value(int64(s.Source.Id)),
+		Name:        types.StringValue(s.Source.Name),
+		Type:        types.StringValue(s.Source.Type),
+		URL:         types.StringValue(s.Source.Url),
+		Description: types.StringValue(s.Source.Description),
+		MultiPeriod: types.BoolValue(s.Source.MultiPeriod),
+		Origin: &originModel{
+			CustomHeaders: func() []customHeadersModel {
+				var headers []customHeadersModel
+				for _, h := range s.Source.Origin.CustomHeaders {
+					headers = append(headers, customHeadersModel{
+						Name:  types.StringValue(h.Name),
+						Value: types.StringValue(h.Value),
+					})
+				}
+				return headers
+			}(),
+		},
+	}
+
+	// Transcoding Profile
+	transcoding := &transcodingProfileDataSourceModel{
+		ID:         types.Int64Value(int64(s.TranscodingProfile.Id)),
+		Name:       types.StringValue(s.TranscodingProfile.Name),
+		InternalId: types.StringValue(s.TranscodingProfile.InternalId),
+		Content:    types.StringValue(s.TranscodingProfile.Content),
+	}
+
+	// LiveAdPreroll
+	var liveAdPreroll *liveAdPrerollModel
+	if s.LiveAdPreRoll.AdServer.Id != 0 {
+		var params []queryParametersModel
+		for _, p := range s.LiveAdPreRoll.AdServer.QueryParameters {
+			params = append(params, queryParametersModel{
+				Type:  types.StringValue(p.Type),
+				Name:  types.StringValue(p.Name),
+				Value: types.StringValue(p.Value),
+			})
+		}
+		liveAdPreroll = &liveAdPrerollModel{
+			AdServer: adServerModel{
+				ID:              types.Int64Value(int64(s.LiveAdPreRoll.AdServer.Id)),
+				Name:            types.StringValue(s.LiveAdPreRoll.AdServer.Name),
+				Type:            types.StringValue(s.LiveAdPreRoll.AdServer.Type),
+				URL:             types.StringValue(s.LiveAdPreRoll.AdServer.Url),
+				QueryParameters: params,
+			},
+			MaxDuration: types.Int64Value(int64(s.LiveAdPreRoll.MaxDuration)),
+			Offset:      types.Int64Value(int64(s.LiveAdPreRoll.Offset)),
+		}
+	}
+
+	// LiveAdReplacement
+	var liveAdReplacement *liveAdReplacementModel
+	if s.LiveAdReplacement.AdServer.Id != 0 {
+		var params []queryParametersModel
+		for _, p := range s.LiveAdReplacement.AdServer.QueryParameters {
+			params = append(params, queryParametersModel{
+				Type:  types.StringValue(p.Type),
+				Name:  types.StringValue(p.Name),
+				Value: types.StringValue(p.Value),
+			})
+		}
+		liveAdReplacement = &liveAdReplacementModel{
+			AdServer: adServerModel{
+				ID:              types.Int64Value(int64(s.LiveAdReplacement.AdServer.Id)),
+				Name:            types.StringValue(s.LiveAdReplacement.AdServer.Name),
+				Type:            types.StringValue(s.LiveAdReplacement.AdServer.Type),
+				URL:             types.StringValue(s.LiveAdReplacement.AdServer.Url),
+				QueryParameters: params,
+			},
+			GapFiller: gapFillerModel{
+				ID:   types.Int64Value(int64(s.LiveAdReplacement.GapFiller.Id)),
+				Name: types.StringValue(s.LiveAdReplacement.GapFiller.Name),
+				Type: types.StringValue(s.LiveAdReplacement.GapFiller.Type),
+				URL:  types.StringValue(s.LiveAdReplacement.GapFiller.Url),
+			},
+			SpotAware: spotAwareModel{
+				Mode: types.StringValue(s.LiveAdReplacement.SpotAware.Mode),
+			},
+		}
+	}
+
+	return &serviceAdInsertionDataSourceModel{
+		ID:                   types.Int64Value(int64(s.Id)),
+		Name:                 types.StringValue(s.Name),
+		Type:                 types.StringValue(s.Type),
+		URL:                  types.StringValue(s.Url),
+		CreationDate:         types.StringValue(s.CreationDate),
+		UpdateDate:           types.StringValue(s.UpdateDate),
+		State:                types.StringValue(s.State),
+		Tags:                 tagsList,
+		EnableAdTranscoding:  types.BoolValue(s.EnableAdTranscoding),
+		ServerSideAdTracking: serverSideAdTracking,
+		Source:               src,
+		TranscodingProfile:   transcoding,
+		AdvancedOptions:      advancedOptions,
+		LiveAdPreRoll:        liveAdPreroll,
+		LiveAdReplacement:    liveAdReplacement,
+	}, nil
+}
+
 // serviceModel maps service schema data.
 type serviceAdInsertionDataSourceModel struct {
 	ID                   types.Int64                        `tfsdk:"id"`

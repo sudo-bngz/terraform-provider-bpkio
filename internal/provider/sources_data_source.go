@@ -130,6 +130,28 @@ func (d *sourcesDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 }
 
+func flattenSources(sdkSources []broadpeakio.Source, filterType *string) []sourcesModel {
+	var result []sourcesModel
+
+	for _, s := range sdkSources {
+		if filterType != nil && *filterType != "" && s.Type != *filterType {
+			continue
+		}
+		result = append(result, sourcesModel{
+			ID:   types.Int64Value(int64(s.Id)),
+			Name: types.StringValue(s.Name),
+			Type: types.StringValue(s.Type),
+			URL:  types.StringValue(s.Url),
+		})
+	}
+
+	if result == nil {
+		return []sourcesModel{} // 👈 force non-nil return
+	}
+
+	return result
+}
+
 // sourcesDataSourceModel maps the data source schema data.
 type sourcesDataSourceModel struct {
 	Type    types.String   `tfsdk:"type"`

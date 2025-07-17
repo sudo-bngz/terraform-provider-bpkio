@@ -162,6 +162,23 @@ func (d *servicesDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 }
 
+func flattenService(s broadpeakio.ServiceOutput, ctx context.Context) (serviceDataSourceModel, error) {
+	tagsList, diags := types.ListValueFrom(ctx, types.StringType, s.EnvironmentTags)
+	if diags.HasError() {
+		return serviceDataSourceModel{}, fmt.Errorf("error converting tags: %v", diags)
+	}
+	return serviceDataSourceModel{
+		ID:           types.Int64Value(int64(s.Id)),
+		Name:         types.StringValue(s.Name),
+		Type:         types.StringValue(s.Type),
+		URL:          types.StringValue(s.Url),
+		CreationDate: types.StringValue(s.CreationDate),
+		UpdateDate:   types.StringValue(s.UpdateDate),
+		State:        types.StringValue(s.State),
+		Tags:         tagsList,
+	}, nil
+}
+
 // servicesDataSourceModel maps the data source schema data.
 type servicesDataSourceModel struct {
 	Type     types.String             `tfsdk:"type"`
