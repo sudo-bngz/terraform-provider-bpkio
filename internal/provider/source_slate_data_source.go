@@ -125,6 +125,16 @@ func (d *sourceSlateDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 }
 
+func flattenSourceSlate(src broadpeakio.Source) sourceSlateDataSourceModel {
+	return sourceSlateDataSourceModel{
+		ID:          types.Int64Value(int64(src.Id)),
+		Name:        types.StringValue(src.Name),
+		Type:        types.StringValue(src.Type),
+		URL:         types.StringValue(src.Url),
+		Description: types.StringValue(src.Description),
+	}
+}
+
 // sourceModel maps source schema data.
 type sourceSlateDataSourceModel struct {
 	ID          types.Int64  `tfsdk:"id"`

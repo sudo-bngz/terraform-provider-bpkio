@@ -181,6 +181,47 @@ func (d *sourceAdServerDataSource) Read(
 	resp.Diagnostics.Append(diags...)
 }
 
+func flattenSourceAdServer(src broadpeakio.AdServer) (sourceAdServerDataSourceModel, error) {
+	paramObjType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"type":  types.StringType,
+			"name":  types.StringType,
+			"value": types.StringType,
+		},
+	}
+
+	var paramValues []attr.Value
+	for _, p := range src.QueryParameters {
+		objVal, diag := types.ObjectValue(
+			paramObjType.AttrTypes,
+			map[string]attr.Value{
+				"type":  types.StringValue(p.Type),
+				"name":  types.StringValue(p.Name),
+				"value": types.StringValue(p.Value),
+			},
+		)
+		if diag.HasError() {
+			return sourceAdServerDataSourceModel{}, fmt.Errorf("invalid param: %v", diag)
+		}
+		paramValues = append(paramValues, objVal)
+	}
+
+	var paramsList types.List
+	if len(paramValues) > 0 {
+		paramsList = types.ListValueMust(paramObjType, paramValues)
+	} else {
+		paramsList = types.ListNull(paramObjType)
+	}
+
+	return sourceAdServerDataSourceModel{
+		ID:              types.Int64Value(int64(src.Id)),
+		Name:            types.StringValue(src.Name),
+		Type:            types.StringValue(src.Type),
+		URL:             types.StringValue(src.Url),
+		QueryParameters: paramsList,
+	}, nil
+}
+
 // sourceModel maps source schema data.
 type sourceAdServerDataSourceModel struct {
 	ID              types.Int64  `tfsdk:"id"`

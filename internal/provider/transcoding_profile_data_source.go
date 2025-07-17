@@ -9,6 +9,7 @@ import (
 
 	broadpeakio "github.com/bashou/bpkio-go-sdk"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -140,4 +141,31 @@ type transcodingProfileDataSourceModel struct {
 	Name       types.String `tfsdk:"name"`
 	Content    types.String `tfsdk:"content"`
 	InternalId types.String `tfsdk:"internal_id"`
+}
+
+func FlattenTranscodingProfiles(list []broadpeakio.TranscodingProfile) ([]attr.Value, attr.Type, error) {
+	profileType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"id":          types.Int64Type,
+			"name":        types.StringType,
+			"content":     types.StringType,
+			"internal_id": types.StringType,
+		},
+	}
+
+	var objs []attr.Value
+	for _, p := range list {
+		obj, diag := types.ObjectValue(profileType.AttrTypes, map[string]attr.Value{
+			"id":          types.Int64Value(int64(p.Id)),
+			"name":        types.StringValue(p.Name),
+			"content":     types.StringValue(p.Content),
+			"internal_id": types.StringValue(p.InternalId),
+		})
+		if diag.HasError() {
+			return nil, profileType, fmt.Errorf("failed to create object value: %v", diag)
+		}
+		objs = append(objs, obj)
+	}
+
+	return objs, profileType, nil
 }
