@@ -619,17 +619,14 @@ func (r *serviceAdInsertionResource) Create(
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 }
-
-// Read refreshes the Terraform state with the latest data.
 func (r *serviceAdInsertionResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	// Get current state
 	var state serviceAdInsertionResourceModel
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Get refreshed adserver value from HashiCups
+
 	service, err := r.client.GetAdInsertion(uint(state.ID.ValueInt64()))
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -639,96 +636,160 @@ func (r *serviceAdInsertionResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	// Convert the []string to types.List
+	// Tags: handle missing or empty slices safely
 	tagsList, diags := types.ListValueFrom(ctx, types.StringType, service.Tags)
-	if diags.HasError() {
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
-	mode := service.LiveAdReplacement.SpotAware.Mode
-	if mode == "" {
-		mode = "disabled"
-	}
+	resp.Diagnostics.Append(diags...)
 
 	state = serviceAdInsertionResourceModel{
-		ID:                  types.Int64Value(int64(service.Id)),
-		Name:                types.StringValue(service.Name),
-		Type:                types.StringValue(service.Type),
-		URL:                 types.StringValue(service.Url),
-		CreationDate:        types.StringValue(service.CreationDate), // Make sure these fields exist in your API response
-		UpdateDate:          types.StringValue(service.UpdateDate),
-		State:               types.StringValue(service.State),
-		Tags:                tagsList,
-		EnableAdTranscoding: types.BoolValue(service.EnableAdTranscoding),
-		ServerSideAdTracking: &serverSideAdTrackingModel{
-			Enable:                          types.BoolValue(service.ServerSideAdTracking.Enable),
-			CheckAdMediaSegmentAvailability: types.BoolValue(service.ServerSideAdTracking.CheckAdMediaSegmentAvailability),
-		},
-		Source: &sourceLiteModel{
-			ID:          types.Int64Value(int64(service.Source.Id)),
-			Name:        types.StringValue(service.Source.Name),
-			Type:        types.StringValue(service.Source.Type),
-			Description: types.StringValue(service.Source.Description),
-			MultiPeriod: types.BoolValue(service.Source.MultiPeriod),
-			URL:         types.StringValue(service.Source.Url),
-		},
-		TranscodingProfile: &transcodingProfileDataSourceModel{
-			ID:         types.Int64Value(int64(service.TranscodingProfile.Id)),
-			Name:       types.StringValue(service.TranscodingProfile.Name),
-			InternalId: types.StringValue(service.TranscodingProfile.InternalId),
-			Content:    types.StringValue(service.TranscodingProfile.Content),
-		},
+		ID:                   types.Int64Value(int64(service.Id)),
+		Name:                 toStringOrEmpty(service.Name),
+		Type:                 toStringOrEmpty(service.Type),
+		URL:                  toStringOrEmpty(service.Url),
+		CreationDate:         toStringOrEmpty(service.CreationDate),
+		UpdateDate:           toStringOrEmpty(service.UpdateDate),
+		State:                toStringOrEmpty(service.State),
+		Tags:                 tagsList,
+		EnableAdTranscoding:  types.BoolValue(service.EnableAdTranscoding),
+		ServerSideAdTracking: nil,
+		Source:               nil,
+		TranscodingProfile:   nil,
+		LiveAdReplacement:    nil,
+		LiveAdPreRoll:        nil,
+		AdvancedOptions:      nil,
 	}
 
-	if service.LiveAdReplacement.AdServer.Id != 0 {
+	// ServerSideAdTracking
+	if service.ServerSideAdTracking.Enable || service.ServerSideAdTracking.CheckAdMediaSegmentAvailability {
+		state.ServerSideAdTracking = &serverSideAdTrackingModel{
+			Enable:                          types.BoolValue(service.ServerSideAdTracking.Enable),
+			CheckAdMediaSegmentAvailability: types.BoolValue(service.ServerSideAdTracking.CheckAdMediaSegmentAvailability),
+		}
+	}
+
+	// Source (defensively set all optional/computed string fields)
+	if service.Source.Id != 0 {
+		state.Source = &sourceLiteModel{
+			ID:          types.Int64Value(int64(service.Source.Id)),
+			Name:        toStringOrEmpty(service.Source.Name),
+			Type:        toStringOrEmpty(service.Source.Type),
+			URL:         toStringOrEmpty(service.Source.Url),
+			Description: toStringOrEmpty(service.Source.Description),
+			MultiPeriod: types.BoolValue(service.Source.MultiPeriod),
+		}
+	} else {
+		// Defensive: Always set to empty even if not present
+		state.Source = &sourceLiteModel{
+			ID:          types.Int64Null(),
+			Name:        types.StringValue(""),
+			Type:        types.StringValue(""),
+			URL:         types.StringValue(""),
+			Description: types.StringValue(""),
+			MultiPeriod: types.BoolNull(),
+		}
+	}
+
+	// TranscodingProfile
+	if service.TranscodingProfile.Id != 0 {
+		state.TranscodingProfile = &transcodingProfileDataSourceModel{
+			ID:         types.Int64Value(int64(service.TranscodingProfile.Id)),
+			Name:       toStringOrEmpty(service.TranscodingProfile.Name),
+			InternalId: toStringOrEmpty(service.TranscodingProfile.InternalId),
+			Content:    toStringOrEmpty(service.TranscodingProfile.Content),
+		}
+	} else {
+		state.TranscodingProfile = &transcodingProfileDataSourceModel{
+			ID:         types.Int64Null(),
+			Name:       types.StringValue(""),
+			InternalId: types.StringValue(""),
+			Content:    types.StringValue(""),
+		}
+	}
+
+	// LiveAdReplacement
+	if service.LiveAdReplacement.AdServer.Id != 0 || service.LiveAdReplacement.GapFiller.Id != 0 {
+		var gapFiller gapFillerModel
+		if service.LiveAdReplacement.GapFiller.Id != 0 {
+			gapFiller = gapFillerModel{
+				ID:   types.Int64Value(int64(service.LiveAdReplacement.GapFiller.Id)),
+				Name: toStringOrEmpty(service.LiveAdReplacement.GapFiller.Name),
+				Type: toStringOrEmpty(service.LiveAdReplacement.GapFiller.Type),
+				URL:  toStringOrEmpty(service.LiveAdReplacement.GapFiller.Url),
+			}
+		} else {
+			gapFiller = gapFillerModel{
+				ID:   types.Int64Null(),
+				Name: types.StringValue(""),
+				Type: types.StringValue(""),
+				URL:  types.StringValue(""),
+			}
+		}
+
+		mode := "disabled"
+		if service.LiveAdReplacement.SpotAware.Mode != "" {
+			mode = service.LiveAdReplacement.SpotAware.Mode
+		}
+
 		state.LiveAdReplacement = &liveAdReplacementLiteModel{
 			AdServer: adServerLiteModel{
 				ID:   types.Int64Value(int64(service.LiveAdReplacement.AdServer.Id)),
-				Name: types.StringValue(service.LiveAdReplacement.AdServer.Name),
-				Type: types.StringValue(service.LiveAdReplacement.AdServer.Type),
-				URL:  types.StringValue(service.LiveAdReplacement.AdServer.Url),
+				Name: toStringOrEmpty(service.LiveAdReplacement.AdServer.Name),
+				Type: toStringOrEmpty(service.LiveAdReplacement.AdServer.Type),
+				URL:  toStringOrEmpty(service.LiveAdReplacement.AdServer.Url),
 			},
-			GapFiller: gapFillerModel{
-				ID:   types.Int64Value(int64(service.LiveAdReplacement.GapFiller.Id)),
-				Name: types.StringValue(service.LiveAdReplacement.GapFiller.Name),
-				Type: types.StringValue(service.LiveAdReplacement.GapFiller.Type),
-				URL:  types.StringValue(service.LiveAdReplacement.GapFiller.Url),
-			},
+			GapFiller: gapFiller,
 			SpotAware: spotAwareModel{
 				Mode: types.StringValue(mode),
 			},
 		}
 	}
 
+	// LiveAdPreRoll
 	if service.LiveAdPreRoll.AdServer.Id != 0 {
 		state.LiveAdPreRoll = &liveAdPrerollLiteModel{
 			AdServer: adServerLiteModel{
 				ID:   types.Int64Value(int64(service.LiveAdPreRoll.AdServer.Id)),
-				Name: types.StringValue(service.LiveAdPreRoll.AdServer.Name),
-				Type: types.StringValue(service.LiveAdPreRoll.AdServer.Type),
-				URL:  types.StringValue(service.LiveAdPreRoll.AdServer.Url),
+				Name: toStringOrEmpty(service.LiveAdPreRoll.AdServer.Name),
+				Type: toStringOrEmpty(service.LiveAdPreRoll.AdServer.Type),
+				URL:  toStringOrEmpty(service.LiveAdPreRoll.AdServer.Url),
 			},
 			MaxDuration: types.Int64Value(int64(service.LiveAdPreRoll.MaxDuration)),
 			Offset:      types.Int64Value(int64(service.LiveAdPreRoll.Offset)),
 		}
 	}
 
-	if service.AdvancedOptions.AuthorizationHeader.Name != "" && service.AdvancedOptions.AuthorizationHeader.Value != "" {
+	// AdvancedOptions
+	if service.AdvancedOptions.AuthorizationHeader.Name != "" || service.AdvancedOptions.AuthorizationHeader.Value != "" {
 		state.AdvancedOptions = &advancedOptionsModel{
 			AuthorizationHeader: &authorizationHeaderModel{
-				Name:  types.StringValue(service.AdvancedOptions.AuthorizationHeader.Name),
-				Value: types.StringValue(service.AdvancedOptions.AuthorizationHeader.Value),
+				Name:  toStringOrEmpty(service.AdvancedOptions.AuthorizationHeader.Name),
+				Value: toStringOrEmpty(service.AdvancedOptions.AuthorizationHeader.Value),
 			},
 		}
 	}
 
-	// Set refreshed state
+	// Set the refreshed state
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+}
+
+// Helper
+func toStringOrEmpty(s string) types.String {
+	if s == "" {
+		return types.StringValue("")
 	}
+	return types.StringValue(s)
+}
+
+// Helpers to handle possibly-missing API fields:
+func toStringOrNull(val string) types.String {
+	if val == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(val)
+}
+func toBoolOrNull(val bool) types.Bool {
+	// Only use Null if you have an "unknown" state, otherwise just use Value
+	return types.BoolValue(val)
 }
 
 // Update updates the resource and sets the updated Terraform state on success.

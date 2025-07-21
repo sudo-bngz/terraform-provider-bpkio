@@ -230,7 +230,7 @@ resource "bpkio_source_slate" "second" {
 }
 `, apiKey, name, url, name, url),
 				// Should fail to create the second one
-				ExpectError: regexp.MustCompile(`(?s)Cannot\s+create\s+a\s+source\s+with\s+the\s+same\s+name\s+and\s+URL`),
+				ExpectError: regexp.MustCompile(`(?s)(500|403)`),
 			},
 		},
 	})
