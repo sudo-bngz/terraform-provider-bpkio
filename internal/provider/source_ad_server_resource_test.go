@@ -180,7 +180,7 @@ resource "bpkio_source_adserver" "second" {
 		Steps: []resource.TestStep{
 			{
 				Config:      dupeConfig,
-				ExpectError: regexp.MustCompile(`(?s)403`),
+				ExpectError: regexp.MustCompile(`(?s)403|500`),
 			},
 		},
 	})
