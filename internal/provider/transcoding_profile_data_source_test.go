@@ -43,6 +43,11 @@ func TestFlattenTranscodingProfiles(t *testing.T) {
 		var got []map[string]string
 		for _, v := range values {
 			o := v.(types.Object)
+			o, ok := v.(types.Object)
+			if !ok {
+				t.Fatalf("unexpected error")
+			}
+
 			m := map[string]string{}
 			for k, v := range o.Attributes() {
 				switch val := v.(type) {
